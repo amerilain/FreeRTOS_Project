@@ -6,7 +6,8 @@
 #include "hardware/gpio.h"
 #include "PicoOsUart.h"
 #include "ssd1306.h"
-
+#include EEPROM.h
+#include "EepromTask.h"
 
 #include "hardware/timer.h"
 extern "C" {
@@ -66,6 +67,15 @@ void gpio_task(void *param) {
             vTaskDelay(delay);
         }
     }
+}
+
+EEPROM eeprom(i2c0, EEPROM_ADDRESS);
+
+void setup() {
+    eeprom.init();
+
+    xTaskCreate(EepromTask, "EepromTask", 256, NULL, 1, NULL);
+    vTaskStartScheduler();
 }
 
 void serial_task(void *param)
