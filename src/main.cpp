@@ -115,19 +115,29 @@ void serial_task(void *param)
 void modbus_task(void *param);
 void display_task(void *param);
 void i2c_task(void *param);
-
+extern "C" {
+    void tls_test(void);
+}
+void tls_task(void *param)
+{
+    tls_test();
+    while(true) {
+        vTaskDelay(100);
+    }
+}
 
 int main()
 {
     static led_params lp1 = { .pin = 20, .delay = 300 };
-    //stdio_init_all();
+    stdio_init_all();
+    printf("\nBoot\n");
 
     gpio_sem = xSemaphoreCreateBinary();
     //xTaskCreate(blink_task, "LED_1", 256, (void *) &lp1, tskIDLE_PRIORITY + 1, nullptr);
     //xTaskCreate(gpio_task, "BUTTON", 256, (void *) nullptr, tskIDLE_PRIORITY + 1, nullptr);
     //xTaskCreate(serial_task, "UART1", 256, (void *) nullptr,
     //            tskIDLE_PRIORITY + 1, nullptr);
-
+#if 0
     xTaskCreate(modbus_task, "Modbus", 512, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
 
@@ -136,6 +146,9 @@ int main()
                 tskIDLE_PRIORITY + 1, nullptr);
 
     xTaskCreate(i2c_task, "i2c test", 512, (void *) nullptr,
+                tskIDLE_PRIORITY + 1, nullptr);
+#endif
+    xTaskCreate(tls_task, "tls test", 6000, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
 
     vTaskStartScheduler();
@@ -178,9 +191,9 @@ void modbus_task(void *param) {
     gpio_pull_up(button);
 
     // Initialize chosen serial port
-    stdio_init_all();
+    //stdio_init_all();
 
-    printf("\nBoot\n");
+    //printf("\nBoot\n");
 
 #ifdef USE_MODBUS
     auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
