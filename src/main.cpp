@@ -6,8 +6,9 @@
 #include "hardware/gpio.h"
 #include "PicoOsUart.h"
 #include "ssd1306.h"
-#include EEPROM.h
-#include "EepromTask.h"
+#include "eeprom/EEPROM.h"
+#include "tasks/EepromTask.cpp"
+#include "PicoI2C.h"
 
 #include "hardware/timer.h"
 extern "C" {
@@ -19,6 +20,9 @@ uint32_t read_runtime_ctr(void) {
 #include "blinker.h"
 
 SemaphoreHandle_t gpio_sem;
+PicoI2C i2c_instance(0, 100000);  // Initialize I2C bus 0 at 100kHz
+EEPROM eeprom(&i2c_instance, 0x50);  // Pass the PicoI2C instance to EEPROM, and use EEPROM device address 0x50
+
 
 void gpio_callback(uint gpio, uint32_t events) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -69,7 +73,7 @@ void gpio_task(void *param) {
     }
 }
 
-EEPROM eeprom(i2c0, EEPROM_ADDRESS);
+//EEPROM eeprom(i2c0, EEPROM_ADDRESS);
 
 void setup() {
     eeprom.init();
