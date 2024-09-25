@@ -5,6 +5,9 @@ add_executable(${ProjectName}
         Fmutex.h
         blinker.cpp
         blinker.h
+        eeprom/EEPROM.h
+        eeprom/EEPROM.cpp
+        tasks/EepromTask.cpp
 
 #        ipstack/IPStack.cpp
 #        ipstack/IPStack.h
