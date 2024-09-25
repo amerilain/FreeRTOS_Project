@@ -14,6 +14,7 @@ uint32_t read_runtime_ctr(void) {
 }
 }
 
+// test comment
 
 #if 1
 #define HTTP_SERVER        "3.224.58.169"
