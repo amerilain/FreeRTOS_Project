@@ -1,5 +1,7 @@
 #include "EEPROM.h"
-#include "hardware/i2c.h"
+#include "PicoI2C.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 #include <cstdio>
 
 #define SDA_PIN 16
@@ -7,25 +9,19 @@
 #define EEPROM_SIZE 2048
 #define I2C_WAIT_TIME 5
 
-EEPROM::EEPROM(i2c_inst *i2c, uint16_t device_address)
-        : i2c(i2c), device_address(device_address)
-{
-    i2c_init(i2c, 100 * 1000);
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
+SemaphoreHandle_t i2c_mutex;
+
+// Constructor now takes a PicoI2C object and initializes the I2C instance
+EEPROM::EEPROM(PicoI2C* i2c, uint16_t device_address)
+        : i2c(i2c), device_address(device_address) {
+    // PicoI2C class handles the I2C initialization, so no need for low-level gpio or i2c_init here
 }
 
-EEPROM::~EEPROM()
-{
-    gpio_set_function(SDA_PIN, GPIO_FUNC_SIO);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_SIO);
-    gpio_pull_down(SDA_PIN);
-    gpio_pull_down(SCL_PIN);
+EEPROM::~EEPROM() {
+    // No cleanup required for PicoI2C, as it manages itself
 }
 
-uint16_t EEPROM::crc16(const uint8_t *data_p, size_t length) {
+uint16_t EEPROM::crc16(const uint8_t* data_p, size_t length) {
     uint8_t x;
     uint16_t crc = 0xFFFF;
     while (length--) {
@@ -36,70 +32,53 @@ uint16_t EEPROM::crc16(const uint8_t *data_p, size_t length) {
     return crc;
 }
 
-void EEPROM::writeToMemory(uint16_t memory_address, uint8_t data)
-{
+void EEPROM::writeToMemory(uint16_t memory_address, uint8_t data) {
     if (memory_address > EEPROM_SIZE - 3) {
         printf("Memory address exceeds EEPROM size.\n");
         return;
     }
 
-    this->writeByte(memory_address, data); // Write the data
-    sleep_ms(I2C_WAIT_TIME);
+    if (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE) {
+        uint8_t buffer[1] = {data};
+        i2c->write(this->device_address, buffer, 1);  // Use PicoI2C's write method
 
-    uint16_t crc = crc16(&data, 1);  // Calculate CRC
+        vTaskDelay(pdMS_TO_TICKS(I2C_WAIT_TIME));  // FreeRTOS-compliant delay
 
-    uint8_t crc_highByte = (crc >> 8) & 0xFF, crc_lowByte = crc & 0xFF; // Split CRC into 2 bytes
+        uint16_t crc = crc16(&data, 1);
+        uint8_t crc_highByte = (crc >> 8) & 0xFF;
+        uint8_t crc_lowByte = crc & 0xFF;
 
-    this->writeByte(memory_address+1, crc_highByte); // Write the CRC high byte
-    sleep_ms(I2C_WAIT_TIME);
+        uint8_t crc_buffer[2] = {crc_highByte, crc_lowByte};
+        i2c->write(this->device_address, crc_buffer, 2);  // Write CRC using PicoI2C's write method
 
-    this->writeByte(memory_address+2, crc_lowByte); // Write the CRC low byte
-    sleep_ms(I2C_WAIT_TIME);
+        vTaskDelay(pdMS_TO_TICKS(I2C_WAIT_TIME));  // Delay for I2C transaction
+
+        xSemaphoreGive(i2c_mutex);  // Release mutex
+    } else {
+        printf("Failed to take mutex for EEPROM write operation.\n");
+    }
+}
+
+uint8_t EEPROM::readFromMemory(uint16_t memory_address) {
+    uint8_t data = 0;
+
+    if (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE) {
+        uint8_t buffer[1];
+        i2c->read(this->device_address, buffer, 1);  // Use PicoI2C's read method
+
+        data = buffer[0];  // Store the read data
+
+        xSemaphoreGive(i2c_mutex);  // Release mutex
+    } else {
+        printf("Failed to take mutex for EEPROM read operation.\n");
+    }
+
+    return data;  // Return the read data
 }
 
 void EEPROM::clearEEPROM() {
     uint8_t fill = 0xFF;
-    for (uint16_t i = 0; i < EEPROM_SIZE-2; i+=3)
-    {
+    for (uint16_t i = 0; i < EEPROM_SIZE - 2; i += 3) {
         this->writeToMemory(i, fill);
     }
-}
-
-uint8_t EEPROM::readFromMemory(uint16_t memory_address){
-    uint8_t data;
-    this->read_byte(memory_address, data); // Read in the data
-    return data;
-}
-
-bool EEPROM::writeByte(uint16_t memory_address, uint8_t data){
-    uint8_t buffer[3];
-    buffer[0] = (memory_address >> 8) & 0xFF;
-    buffer[1] = memory_address & 0xFF;
-    buffer[2] = data;
-
-    int result = i2c_write_blocking(this->i2c, this->device_address, buffer, 3, false);
-
-    if(result != 3) {
-        printf("Failed to write data at EEPROM address %u\n", memory_address);
-        return false;
-    } else {
-        printf("Data written successfully at EEPROM address %u.\n", memory_address);
-        return true;
-    }
-}
-
-bool EEPROM::read_byte(uint16_t memory_address, uint8_t &data){
-    uint8_t address_buffer[2];
-    address_buffer[0] = (memory_address >> 8) & 0xFF;
-    address_buffer[1] = memory_address & 0xFF;
-
-    if (i2c_write_blocking(this->i2c, this->device_address, address_buffer, 2, true) != 2) {
-        return false;
-    }
-
-    if (i2c_read_blocking(this->i2c, this->device_address, &data, 1, false) != 1) {
-        return false;
-    }
-
-    return true;
 }

@@ -1,27 +1,25 @@
 #ifndef EEPROM_H
 #define EEPROM_H
 
-#include <cstdint>
-#include "hardware/gpio.h"
-#include "hardware/i2c.h"
+#include "PicoI2C.h"  // Use PicoI2C class for higher-level I2C operations
 
-#define EEPROM_ADDRESS 0x50
-
-class EEPROM
-{
+class EEPROM {
 public:
-    explicit EEPROM(i2c_inst *i2c, uint16_t device_address = EEPROM_ADDRESS);
+    // Constructor now takes a PicoI2C pointer, not i2c_inst_t
+    explicit EEPROM(PicoI2C* i2c, uint16_t device_address);
     ~EEPROM();
+
     void writeToMemory(uint16_t memory_address, uint8_t data);
     uint8_t readFromMemory(uint16_t memory_address);
-    static uint16_t crc16(const uint8_t *data_p, size_t length);
     void clearEEPROM();
-    bool writeByte(uint16_t memory_address, uint8_t data);
-    bool read_byte(uint16_t memory_address, uint8_t &data);
 
 private:
-    i2c_inst *i2c;
+    PicoI2C* i2c;  // Now using PicoI2C class instead of i2c_inst_t
     uint16_t device_address;
+
+    uint16_t crc16(const uint8_t* data_p, size_t length);
+    bool writeByte(uint16_t memory_address, uint8_t data);
+    bool read_byte(uint16_t memory_address, uint8_t &data);
 };
 
 #endif // EEPROM_H
