@@ -51,4 +51,3 @@ void Blinker::runner(void *params) {
     Blinker *instance = static_cast<Blinker *>(params);
     instance->run();
 }
-
