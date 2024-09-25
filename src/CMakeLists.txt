@@ -9,8 +9,8 @@ add_executable(${ProjectName}
         eeprom/EEPROM.cpp
         tasks/EepromTask.cpp
 
-#        ipstack/IPStack.cpp
-#        ipstack/IPStack.h
+        ipstack/IPStack.cpp
+        ipstack/IPStack.h
         ipstack/lwipopts.h
         ipstack/tls_common.c
         ipstack/picow_tls_client.c
