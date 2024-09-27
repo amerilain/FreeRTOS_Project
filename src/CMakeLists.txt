@@ -5,12 +5,9 @@ add_executable(${ProjectName}
         Fmutex.h
         blinker.cpp
         blinker.h
-        eeprom/EEPROM.h
-        eeprom/EEPROM.cpp
-        tasks/EepromTask.cpp
 
-        ipstack/IPStack.cpp
-        ipstack/IPStack.h
+#        ipstack/IPStack.cpp
+#        ipstack/IPStack.h
         ipstack/lwipopts.h
         ipstack/tls_common.c
         ipstack/picow_tls_client.c
@@ -37,6 +34,7 @@ add_executable(${ProjectName}
 #        display/ssd1306.h
         display/ssd1306os.h
         display/ssd1306os.cpp
+        wifi/picow_tls_client.c
 )
 
 target_include_directories(${ProjectName} PRIVATE

@@ -53,8 +53,8 @@ void tls_test(void) {
     now.tv_usec = 0;
     settimeofday(&now, NULL);
 #endif
-    char ssid[] = "Nadim";
-    char pwd[] = "nadimahmed";
+    char ssid[] = WIFI_SSID;
+    char pwd[] = WIFI_PASSWORD;
     printf("SSID: %s\nPWD: %s\n", ssid, pwd);//WIFI_SSID, WIFI_PASSWORD);
     if (cyw43_arch_init()) {
         printf("failed to initialise\n");
@@ -62,7 +62,7 @@ void tls_test(void) {
     }
     cyw43_arch_enable_sta_mode();
 
-    if (cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+    if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
         printf("failed to connect\n");
         return;
     }
@@ -82,12 +82,5 @@ void tls_test(void) {
     cyw43_arch_deinit();
     printf("All done\n");
     return;
-}
-
-int main() {
-    stdio_init_all();
-    printf("Hello, world!\n");
-    tls_test();
-    return 0;
 }
 
