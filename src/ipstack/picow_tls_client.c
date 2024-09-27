@@ -11,7 +11,7 @@
 #if 1
 //#define TLS_CLIENT_SERVER        "18.198.188.151"
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
-#define TLS_CLIENT_HTTP_REQUEST  "GET /talkbacks/52920/commands/COMMAND_ID.json?api_key=371DAWENQKI6J8DD HTTP/1.1\r\n" \
+#define TLS_CLIENT_HTTP_REQUEST  "GET https://api.thingspeak.com/channels/2674068/fields/1/last.txt?api_key=I6LSZGMETYSTJ0CT HTTP/1.1\r\n" \
                                  "Host: " TLS_CLIENT_SERVER "\r\n" \
                                  "Connection: close\r\n" \
                                  "\r\n"
@@ -42,8 +42,8 @@ Ew==\n\
 
 extern bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout);
 
-//#define WIFI_SSID "SmartIotMQTT"
-//#define WIFI_PASSWORD "SmartIot"
+#define WIFI_SSID "Nadim"
+#define WIFI_PASSWORD "nadimahmed"
 
 void tls_test(void) {
     //stdio_init_all();
