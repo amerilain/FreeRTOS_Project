@@ -39,6 +39,7 @@ add_executable(${ProjectName}
         Button_Rotary_irq/interrupt_Handler.cpp
         painless/tftdisplay.cpp
         painless/tftdisplay.h
+        Aaban's_Code/main.cpp
 )
 
 target_include_directories(${ProjectName} PRIVATE

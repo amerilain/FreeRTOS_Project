@@ -14,8 +14,7 @@ void Interrupt_Handler::setupPin(uint8_t pin) {
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_IN);
     gpio_pull_up(pin);
-    gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_RISE, true,
-                                       callback);
+    gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_RISE, true, callback);
     handlers[pin] = this;
 
 }
@@ -47,6 +46,7 @@ void Interrupt_Handler::callback(uint gpio, uint32_t events) {
 
 std::map<uint, Interrupt_Handler*> Interrupt_Handler::handlers = {};
 uint32_t Interrupt_Handler::timestamp = time_us_32();
+
 int Interrupt_Handler::getCount() {
     return count;
 }
