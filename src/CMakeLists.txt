@@ -34,6 +34,11 @@ add_executable(${ProjectName}
 #        display/ssd1306.h
         display/ssd1306os.h
         display/ssd1306os.cpp
+        #       Our headers:
+        Button_Rotary_irq/interrupt_Handler.h
+        Button_Rotary_irq/interrupt_Handler.cpp
+        painless/tftdisplay.cpp
+        painless/tftdisplay.h
 )
 
 target_include_directories(${ProjectName} PRIVATE
