@@ -15,92 +15,10 @@ uint32_t read_runtime_ctr(void) {
 }
 }
 
-#include "blinker.h"
-
-SemaphoreHandle_t gpio_sem;
-
-void gpio_callback(uint gpio, uint32_t events) {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    // signal task that a button was pressed
-    xSemaphoreGiveFromISR(gpio_sem, &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-struct led_params{
-    uint pin;
-    uint delay;
-};
-
-void blink_task(void *param)
-{
-    auto lpr = (led_params *) param;
-    const uint led_pin = lpr->pin;
-    const uint delay = pdMS_TO_TICKS(lpr->delay);
-    gpio_init(led_pin);
-    gpio_set_dir(led_pin, GPIO_OUT);
-    while (true) {
-        gpio_put(led_pin, true);
-        vTaskDelay(delay);
-        gpio_put(led_pin, false);
-        vTaskDelay(delay);
-    }
-}
-
-void gpio_task(void *param) {
-    (void) param;
-    const uint button_pin = 9;
-    const uint led_pin = 22;
-    const uint delay = pdMS_TO_TICKS(250);
-    gpio_init(led_pin);
-    gpio_set_dir(led_pin, GPIO_OUT);
-    gpio_init(button_pin);
-    gpio_set_dir(button_pin, GPIO_IN);
-    gpio_set_pulls(button_pin, true, false);
-    gpio_set_irq_enabled_with_callback(button_pin, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
-    while(true) {
-        if(xSemaphoreTake(gpio_sem, portMAX_DELAY) == pdTRUE) {
-            //std::cout << "button event\n";
-            gpio_put(led_pin, 1);
-            vTaskDelay(delay);
-            gpio_put(led_pin, 0);
-            vTaskDelay(delay);
-        }
-    }
-}
-
-void serial_task(void *param)
-{
-    PicoOsUart u(0, 0, 1, 115200);
-    Blinker blinky(20);
-    uint8_t buffer[64];
-    std::string line;
-    while (true) {
-        if(int count = u.read(buffer, 63, 30); count > 0) {
-            u.write(buffer, count);
-            buffer[count] = '\0';
-            line += reinterpret_cast<const char *>(buffer);
-            if(line.find_first_of("\n\r") != std::string::npos){
-                u.send("\n");
-                std::istringstream input(line);
-                std::string cmd;
-                input >> cmd;
-                if(cmd == "delay") {
-                    uint32_t i = 0;
-                    input >> i;
-                    blinky.on(i);
-                }
-                else if (cmd == "off") {
-                    blinky.off();
-                }
-                line.clear();
-            }
-        }
-    }
-}
 
 void modbus_task(void *param);
-void display_task(void *param);
-void i2c_task(void *param);
+void read_pressur(void *param);
+
 extern "C" {
     void tls_test(void);
 }
@@ -112,29 +30,16 @@ void tls_task(void *param)
     }
 }
 
+#include "pico/stdlib.h"
 int main()
 {
-    static led_params lp1 = { .pin = 20, .delay = 300 };
     stdio_init_all();
     printf("\nBoot\n");
 
-    gpio_sem = xSemaphoreCreateBinary();
-    //xTaskCreate(blink_task, "LED_1", 256, (void *) &lp1, tskIDLE_PRIORITY + 1, nullptr);
-    //xTaskCreate(gpio_task, "BUTTON", 256, (void *) nullptr, tskIDLE_PRIORITY + 1, nullptr);
-    //xTaskCreate(serial_task, "UART1", 256, (void *) nullptr,
-    //            tskIDLE_PRIORITY + 1, nullptr);
-#if 0
+
     xTaskCreate(modbus_task, "Modbus", 512, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
-
-
-    xTaskCreate(display_task, "SSD1306", 512, (void *) nullptr,
-                tskIDLE_PRIORITY + 1, nullptr);
-
-    xTaskCreate(i2c_task, "i2c test", 512, (void *) nullptr,
-                tskIDLE_PRIORITY + 1, nullptr);
-#endif
-    xTaskCreate(tls_task, "tls test", 6000, (void *) nullptr,
+    xTaskCreate(read_pressur, "Pressure", 512, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
 
     vTaskStartScheduler();
@@ -167,6 +72,7 @@ void modbus_task(void *param) {
 
     const uint led_pin = 22;
     const uint button = 9;
+    const uint co2_injector = 27;
 
     // Initialize LED pin
     gpio_init(led_pin);
@@ -176,6 +82,10 @@ void modbus_task(void *param) {
     gpio_set_dir(button, GPIO_IN);
     gpio_pull_up(button);
 
+    gpio_init(co2_injector);
+    gpio_set_dir(co2_injector, GPIO_OUT);
+    gpio_pull_up(co2_injector);
+
     // Initialize chosen serial port
     //stdio_init_all();
 
@@ -184,74 +94,60 @@ void modbus_task(void *param) {
 #ifdef USE_MODBUS
     auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
     auto rtu_client{std::make_shared<ModbusClient>(uart)};
+    ModbusRegister co(rtu_client, 240, 256);
     ModbusRegister rh(rtu_client, 241, 256);
     ModbusRegister t(rtu_client, 241, 257);
     ModbusRegister produal(rtu_client, 1, 0);
     produal.write(100);
     vTaskDelay((100));
-    produal.write(100);
+    produal.write(800);
 #endif
+    int co2 = 0;
 
     while (true) {
 #ifdef USE_MODBUS
         gpio_put(led_pin, !gpio_get(led_pin)); // toggle  led
+        co2 = co.read();
+        printf("CO=%d\n", co2);
+        vTaskDelay(5);
         printf("RH=%5.1f%%\n", rh.read() / 10.0);
         vTaskDelay(5);
         printf("T =%5.1f%%\n", t.read() / 10.0);
+        if(co2 < 500){
+            gpio_put(co2_injector, 1);
+        }
+        else if(co2 > 500){
+            gpio_put(co2_injector, 0);
+        }
         vTaskDelay(3000);
 #endif
     }
-
-
 }
 
-#include "ssd1306os.h"
-void display_task(void *param)
-{
+#include "PicoI2C.h"
+#include "painless//PressureSensor.h"
+void read_pressur(void *param) {
+    /*auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
+    uint8_t data[1] = {0xF1};
+    uint8_t values[2] = {0};
+    int pressure;
+    int sensorValue;
+    while (true) {
+        i2cbus->transaction(0x40, data, 1, values, 2);
+       // i2cbus->read(0x40, values, 2);
+        pressure = ( (values[0] << 8) | values[1]) /240 *0.95;  // 0.95 is based on sea level ( based on datasheet)
+        pressure = (pressure <= 0) ? 0 : (pressure >= 127) ? 0 : pressure;
+        printf("Pressurelast=%d\n", pressure);
+        vTaskDelay(3000);
+
+    }*/
+
     auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
-    ssd1306os display(i2cbus);
-    display.fill(0);
-    display.text("Boot", 0, 0);
-    display.show();
-    while(true) {
-        vTaskDelay(100);
+    PressureSensor sensor(i2cbus, 0x40);
+
+    while (true) {
+        printf("Pressure=%d\n", sensor.readPressure());
+        vTaskDelay(3000);
     }
-
-}
-
-void i2c_task(void *param) {
-    auto i2cbus{std::make_shared<PicoI2C>(0, 100000)};
-
-    const uint led_pin = 21;
-    const uint delay = pdMS_TO_TICKS(250);
-    gpio_init(led_pin);
-    gpio_set_dir(led_pin, GPIO_OUT);
-
-    uint8_t buffer[64] = {0};
-    i2cbus->write(0x50, buffer, 2);
-
-    auto rv = i2cbus->read(0x50, buffer, 64);
-    printf("rv=%u\n", rv);
-    for(int i = 0; i < 64; ++i) {
-        printf("%c", isprint(buffer[i]) ? buffer[i] : '_');
-    }
-    printf("\n");
-
-    buffer[0]=0;
-    buffer[1]=64;
-    rv = i2cbus->transaction(0x50, buffer, 2, buffer, 64);
-    printf("rv=%u\n", rv);
-    for(int i = 0; i < 64; ++i) {
-        printf("%c", isprint(buffer[i]) ? buffer[i] : '_');
-    }
-    printf("\n");
-
-    while(true) {
-        gpio_put(led_pin, 1);
-        vTaskDelay(delay);
-        gpio_put(led_pin, 0);
-        vTaskDelay(delay);
-    }
-
 
 }
