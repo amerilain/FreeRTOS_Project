@@ -80,8 +80,12 @@ void rot_and_button_handler_irq(void *param) {
     auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
     auto display{std::make_shared<TFTDisplay>( i2cbus)};
 
+    display->welcomeScreen();
+    sleep_ms(2000);
 
     while(true) {
+
+
         if (rothandlerA.count == 1) {
             display->fill(0);
             display->text("Turned Clockwise", 0, 0);
