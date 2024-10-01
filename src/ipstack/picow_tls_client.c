@@ -7,11 +7,12 @@
 #include <mbedtls/debug.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include "FreeRTOS.h"
 
 #if 1
 //#define TLS_CLIENT_SERVER        "18.198.188.151"
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
-#define TLS_CLIENT_HTTP_REQUEST  "GET /talkbacks/52920/commands/COMMAND_ID.json?api_key=371DAWENQKI6J8DD HTTP/1.1\r\n" \
+#define TLS_CLIENT_HTTP_REQUEST  "GET /talkbacks/53261/commands/execute.json?api_key=ZZ4SW85BXQ6W18HV HTTP/1.1\r\n" \
                                  "Host: " TLS_CLIENT_SERVER "\r\n" \
                                  "Connection: close\r\n" \
                                  "\r\n"
@@ -45,6 +46,8 @@ extern bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char
 //#define WIFI_SSID "SmartIotMQTT"
 //#define WIFI_PASSWORD "SmartIot"
 
+#define WIFI_SSID "Nadim"
+#define WIFI_PASSWORD "nadimahmed"
 void tls_test(void) {
     //stdio_init_all();
 #if 0
@@ -70,7 +73,19 @@ void tls_test(void) {
     const uint8_t dummy_cert[]={0};
 
     //bool pass = run_tls_client_test(cert_joe, sizeof(cert_joe), TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_REQUEST, TLS_CLIENT_TIMEOUT_SECS);
+    int count = 0;
+    while(count < 8){
+        bool pass = run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_REQUEST, TLS_CLIENT_TIMEOUT_SECS);
+            if (pass) {
+                printf("Test passed: %d\n", count);
+            } else {
+                printf("Test failed\n");
+            }
+        sleep_ms(1000);
+            count++;
+    }
     bool pass = run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, TLS_CLIENT_HTTP_REQUEST, TLS_CLIENT_TIMEOUT_SECS);
+
     if (pass) {
         printf("Test passed\n");
     } else {

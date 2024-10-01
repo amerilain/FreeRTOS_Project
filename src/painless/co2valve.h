@@ -16,6 +16,7 @@ public:
     void setValve(int value);
     int getValve();
 private:
+    uint valve_pin;
     int current_value;
     int previous_value;
     int set_value;

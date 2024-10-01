@@ -43,6 +43,10 @@ add_executable(${ProjectName}
         painless/ModbusController.cpp
         painless/PressureSensor.h
         painless/PressureSensor.cpp
+        painless/co2valve.cpp
+        painless/co2valve.h
+        painless/NetworkClass.cpp
+        # painless/nadim_main.cpp
 )
 
 target_include_directories(${ProjectName} PRIVATE
