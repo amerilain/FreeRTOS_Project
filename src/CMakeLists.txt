@@ -39,7 +39,6 @@ add_executable(${ProjectName}
         Button_Rotary_irq/interrupt_Handler.cpp
         painless/tftdisplay.cpp
         painless/tftdisplay.h
-        Aaban's_Code/Newest_Main_Code.h
         #menu/MenuHandler.cpp
         #menu/MenuHandler.h
         #menu/Menu.cpp
