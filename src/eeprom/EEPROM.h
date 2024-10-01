@@ -23,8 +23,6 @@ private:
     uint16_t device_address;
 
     uint16_t crc16(const uint8_t* data_p, size_t length);
-    bool writeByte(uint16_t memory_address, uint8_t data);
-    bool read_byte(uint16_t memory_address, uint8_t &data);
 
 };
 
