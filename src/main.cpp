@@ -18,6 +18,8 @@ uint32_t read_runtime_ctr(void) {
 
 void modbus_task(void *param);
 void read_pressur(void *param);
+void display_task(void *param);
+void i2c_task(void *param);
 
 extern "C" {
     void tls_test(void);
@@ -36,15 +38,28 @@ int main()
     stdio_init_all();
     printf("\nBoot\n");
 
-
     xTaskCreate(modbus_task, "Modbus", 512, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
+
     xTaskCreate(read_pressur, "Pressure", 512, (void *) nullptr,
                 tskIDLE_PRIORITY + 1, nullptr);
 
+    //xTaskCreate(display_task, "SSD1306", 512, (void *) nullptr,
+    //            tskIDLE_PRIORITY + 1, nullptr);
+
+#if 1
+    //xTaskCreate(i2c_task, "i2c test", 512, (void *) nullptr,
+     //           tskIDLE_PRIORITY + 1, nullptr);
+#endif
+
+#if 0
+    xTaskCreate(tls_task, "tls test", 6000, (void *) nullptr,
+                tskIDLE_PRIORITY + 1, nullptr);
+#endif
+
     vTaskStartScheduler();
 
-    while(true){};
+    while(true) {};
 }
 
 #include <cstdio>
