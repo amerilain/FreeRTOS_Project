@@ -1,7 +1,4 @@
 //
-// Created by iamna on 01/10/2024.
-//
-//
 // Created by abhin on 27/09/2024.
 //
 
@@ -23,7 +20,7 @@ uint32_t read_runtime_ctr(void) {
 }
 }
 
-/*extern "C" {
+extern "C" {
 void tls_test(void);
 }
 void tls_task(void *param)
@@ -32,29 +29,8 @@ void tls_task(void *param)
     while(true) {
         vTaskDelay(100);
     }
-}*/
-
-#include "painless/NetworkClass.h"
-
-void tls_task(void *param)
-{
-    NetworkClass network("Nadim", "nadimahmed");
-    bool network_status =false;
-    while(true) {
-        if (network_status == false)
-        {
-            network.connect();
-            network_status = true;
-        }
-        if(network_status == true)
-        {
-            network.recieve();
-            vTaskDelay(20000);
-        }
-
-        vTaskDelay(100);
-    }
 }
+
 int main()
 {
     stdio_init_all();

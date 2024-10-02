@@ -46,7 +46,14 @@ add_executable(${ProjectName}
         painless/co2valve.cpp
         painless/co2valve.h
         painless/NetworkClass.cpp
+        painless/NetworkClass.h
+        painless/SharedResources.h
+        painless/SharedResources.cpp
+        #painless/MenuHandler.cpp
+        #painless/MenuHandler.h
+        #painless/main2.cpp
         # painless/nadim_main.cpp
+        #abhinav/abhinav.cpp
 )
 
 target_include_directories(${ProjectName} PRIVATE

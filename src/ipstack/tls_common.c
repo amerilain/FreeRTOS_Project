@@ -17,6 +17,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+
 typedef struct TLS_CLIENT_T_ {
     struct altcp_pcb *pcb;
     bool complete;
@@ -26,6 +27,16 @@ typedef struct TLS_CLIENT_T_ {
 } TLS_CLIENT_T;
 
 static struct altcp_tls_config *tls_config = NULL;
+//Make struct
+// return buf to NetworkClass from tls_client_recv
+
+static char *buffer = "Nadim";
+
+char *get_buffer() {
+    char *buf = buffer;
+    free(buffer);
+    return buf;
+}
 
 static err_t tls_client_close(void *arg) {
     TLS_CLIENT_T *state = (TLS_CLIENT_T*)arg;
@@ -92,12 +103,35 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
            Do be aware that the amount of data can potentially be a bit large (TLS record size can be 16 KB),
            so you may want to use a smaller fixed size buffer and copy the data to it using a loop, if memory is a concern */
         //char buf[p->tot_len + 1];
+        static int chunk_counter = 0;
+        chunk_counter++;
+
         char *buf= (char *) malloc(p->tot_len + 1);
 
         pbuf_copy_partial(p, buf, p->tot_len, 0);
         buf[p->tot_len] = 0;
 
         printf("***\nnew data received from server:\n***\n\n[%s]\n", buf);
+        printf("chunk_counter: %d\n", chunk_counter);
+
+        // Copy the buffer to the global buffer
+        // Copy the buffer to the global buffer
+        /*if (chunk_counter == 2 && p->tot_len > 0) {
+            buffer = (char *) malloc(p->tot_len + 1);
+            memcpy(buffer, buf, p->tot_len + 1);
+            printf("buffer: %s\n", buffer);
+        }
+        if (chunk_counter == 3){
+            chunk_counter = 0;
+        }
+*/
+        if (strstr(buf, "{\"executed_at\":") != NULL) {
+            buffer = (char *) malloc(p->tot_len + 1);
+            memcpy(buffer, buf, p->tot_len + 1);
+            printf("buffer: %s\n", buffer);
+        }
+
+
         free(buf);
 
         altcp_recved(pcb, p->tot_len);

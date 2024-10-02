@@ -49,7 +49,7 @@ void tls_task(void *param)
         if(network_status == true)
         {
             network.recieve();
-            vTaskDelay(20000);
+            vTaskDelay(10000);
         }
 
         vTaskDelay(100);
