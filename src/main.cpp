@@ -143,11 +143,11 @@ void read_pressur(void *param) {
     }*/
 
     auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
-    PressureSensor sensor(i2cbus, 0x40);
+/*    PressureSensor sensor(i2cbus, 0x40);
 
     while (true) {
         printf("Pressure=%d\n", sensor.readPressure());
         vTaskDelay(3000);
     }
-
+*/
 }
