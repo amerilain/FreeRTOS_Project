@@ -26,18 +26,7 @@ bool settingsUpdated = false;
 // Define the I2C mutex here in main.cpp
 SemaphoreHandle_t i2c_mutex;
 
-void EepromTask(void *params) {
-    while (true) {
-        if (settingsUpdated) {
-            uint8_t co2_setpoint = 5; // random value for now....
-            eeprom.writeToMemory(0x00, co2_setpoint);
-            settingsUpdated = false;
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
-void i2c_task(void *param) {
+void Eeprom_Task(void *param) {
     // Ensure mutex is created successfully
     i2c_mutex = xSemaphoreCreateMutex();
     if (i2c_mutex == NULL) {
@@ -58,16 +47,32 @@ void i2c_task(void *param) {
     const char* write_string = "Hello, World!";
     size_t string_length = strlen(write_string);
 
-    // Write the string to EEPROM
-    eeprom.writeToMemory(0x00, (const uint8_t*)write_string, string_length);
-    printf("Written '%s' to EEPROM.\n", write_string);
+    // Write the string to EEPROM at different locations (0, 64, and 128)
+
+    eeprom.writeToMemory(0x00, (const uint8_t*)write_string, string_length);  // Location 0
+    printf("Written '%s' to EEPROM at location 0.\n", write_string);
+
+    eeprom.writeToMemory(0x40, (const uint8_t*)write_string, string_length);  // Location 64 (0x40 is 64 in hex)
+    printf("Written '%s' to EEPROM at location 64.\n", write_string);
+
+    eeprom.writeToMemory(0x80, (const uint8_t*)write_string, string_length);  // Location 128 (0x80 is 128 in hex)
+    printf("Written '%s' to EEPROM at location 128.\n", write_string);
 
     // Buffer to hold the read string
     char read_buffer[64] = {0};  // Make sure this buffer is large enough
 
-    // Read the string back from EEPROM
-    eeprom.readFromMemory(0x00, (uint8_t*)read_buffer, string_length);
-    printf("Read '%s' from EEPROM.\n", read_buffer);
+
+    // Read the string back from EEPROM (reading from location 0)
+    eeprom.readFromMemory(0x0, (uint8_t*)read_buffer, string_length);
+    printf("Read '%s' from EEPROM at location 0.\n", read_buffer);
+
+    // Read the string back from EEPROM (reading from location 64)
+    eeprom.readFromMemory(0x40, (uint8_t*)read_buffer, string_length);
+    printf("Read '%s' from EEPROM at location 64.\n", read_buffer);
+
+    // Read the string back from EEPROM (reading from location 128)
+    eeprom.readFromMemory(0x80, (uint8_t*)read_buffer, string_length);
+    printf("Read '%s' from EEPROM at location 128.\n", read_buffer);
 
     while (true) {
         gpio_put(led_pin, 1);
@@ -81,7 +86,7 @@ int main() {
     stdio_init_all();
 
     // Create the I2C task
-    xTaskCreate(i2c_task, "i2c_task", 256, NULL, 1, NULL);
+    xTaskCreate(Eeprom_Task, "Eeprom_Task", 256, NULL, 1, NULL);
 
     // Start FreeRTOS scheduler
     vTaskStartScheduler();
