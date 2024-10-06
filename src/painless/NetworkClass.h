@@ -19,7 +19,7 @@
                                  "Connection: close\r\n" \
                                  "\r\n"
 */
-extern const char *req;
+//extern const char *req;
 
 
 #define TLS_CLIENT_TIMEOUT_SECS  15
@@ -27,7 +27,7 @@ extern const char *req;
 
 extern "C" {
 bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout);
-char *get_buffer();
+int get_co2_setpoint();
 }
 
 class NetworkClass {
@@ -36,6 +36,7 @@ public:
     void init();
     void connect();
     void recieve();
+    void send(int co2, int tem, int rh, int fanSpeed, int pressure);
     void setCredentials(char* ssid, char* password);
     int Co2_SetPoint;
 private:
@@ -44,6 +45,14 @@ private:
 
     uint32_t event;
 
+    const char *req = "POST /talkbacks/53261/commands/execute.json HTTP/1.1\r\n"
+                      "Host: api.thingspeak.com\r\n"
+                      "User-Agent: PicoW\r\n"
+                      "Accept: */*\r\n"
+                      "Content-Length: 24\r\n"
+                      "Content-Type: application/x-www-form-urlencoded\r\n"
+                      "\r\n"
+                      "api_key=ZZ4SW85BXQ6W18HV";
 
 
 

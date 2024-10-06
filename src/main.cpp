@@ -59,7 +59,7 @@ int main()
     mutex = xSemaphoreCreateMutex();
 
     // Network task
-    xTaskCreate(NetworkTask, "NetworkTask", 6000, (void *) nullptr,
+    xTaskCreate(NetworkTask, "NetworkTask", 6000, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
    /* //EEPROM task
     xTaskCreate(eeprom_task, "EEPROM", 512, &sharedResourcesPtr,
@@ -213,9 +213,7 @@ void UI_task(void *param){
         }*/
       menu.event(sharedResourcesPtr->Event);
       //printf("MENU sHOW\n");
-      if (sharedResourcesPtr->isRotaryClockwise){
-          printf("Rotary Clockwise\n");
-        }
+
 
         vTaskDelay(100);
     }
@@ -231,11 +229,11 @@ void NetworkTask(void *param)
     bool transmit = false;
     while(true) {
         // print SSID and password
-        printf("SSID=%s\n", sharedResources->getSSID());
-        printf("Password=%s\n", sharedResources->getPassword());
+
         if (sharedResources->credentialsEntered){
 
-            network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
+            //network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
+            network.setCredentials("Nadim", "nadimahmed");
             printf("I am here");
             sharedResources->credentialsEntered = false;
             network_status = true;
@@ -249,6 +247,8 @@ void NetworkTask(void *param)
         if(transmit)
         {
             network.recieve();
+            printf("Co2 Set Point in network=%d\n", network.Co2_SetPoint);
+            network.send(500, 1000, 2000, 3000, 4000);
            /* if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint != 0) {
                 sharedResources->setCo2SP(network.Co2_SetPoint);
                 printf("CO2 Set Point in main=%d\n", sharedResources->getCo2SP());

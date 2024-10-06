@@ -170,31 +170,41 @@ void Menu::event(SharedResources::EventType event) {
             display->fill(0);
             display->text("Enter SSID", 0, 20);
             display->show();
+            vTaskDelay(pdMS_TO_TICKS(4000));
             MenuEventType = enterCredentials;
             keyboard= capital;
             display->displayKeyboard(keyboard);
             display->selectChar(0);
             maxScroll = alphabet.size()-1;
             position = 0;
-            vTaskDelay(pdMS_TO_TICKS(4000));
+
             break;
         case PASSWORD:
             display->fill(0);
             display->text("Enter Password", 0, 20);
             display->show();
+            vTaskDelay(pdMS_TO_TICKS(4000));
             MenuEventType = enterCredentials;
             keyboard= capital;
             display->displayKeyboard(keyboard);
             display->selectChar(0);
             maxScroll = alphabet.size()-1;
             position = 0;
-            vTaskDelay(pdMS_TO_TICKS(4000));
+
             break;
         case connectwifi:
             MenuEventType = mainMenu;
             resources->setSSID(ssid2);
             resources->setPassword(password2);
+            printf("SSID: %s\n", ssid2);
+            printf("Password: %s\n", password2);
             resources->credentialsEntered = true;
+            if(resources->credentialsEntered){
+                display->fill(0);
+                display->text("Connecting...", 0, 20);
+                display->show();
+                vTaskDelay(pdMS_TO_TICKS(4000));
+            }
             display->mainMenu();
             display->selectmenu(0);
             break;
@@ -263,7 +273,8 @@ void Menu::event(SharedResources::EventType event) {
                 resources->isSW0Pressed = false;
                 if (!displyString.empty()) { // If the Entered string is not empty
                     displyString = std::string(currentCharBuff.begin(), currentCharBuff.end());
-                    //std::cout << displyString << std::endl;
+                   // std::cout << displyString << std::endl;
+                    printf("Entered: %s\n", displyString.c_str());
                     if (!ssidEntered) { // If the ssid is not entered save it to ssid2
                         std::copy(currentCharBuff.begin(), currentCharBuff.end(), ssid2);
                         ssid2[displyString.size()] = '\0';

@@ -17,7 +17,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-
 typedef struct TLS_CLIENT_T_ {
     struct altcp_pcb *pcb;
     bool complete;
@@ -27,15 +26,11 @@ typedef struct TLS_CLIENT_T_ {
 } TLS_CLIENT_T;
 
 static struct altcp_tls_config *tls_config = NULL;
-//Make struct
-// return buf to NetworkClass from tls_client_recv
 
-static char *buffer = "Nadim";
+static int Co2_SetPoint = 0;
 
-char *get_buffer() {
-   /* char *buf = buffer;
-    free(buffer);*/
-    return buffer;
+int  get_co2_setpoint() {
+    return Co2_SetPoint;
 }
 
 static err_t tls_client_close(void *arg) {
@@ -98,38 +93,32 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
     }
 
     if (p->tot_len > 0) {
-        /* For simplicity this examples creates a buffer on stack the size of the data pending here, 
+        /* For simplicity this examples creates a buffer on stack the size of the data pending here,
            and copies all the data to it in one go.
            Do be aware that the amount of data can potentially be a bit large (TLS record size can be 16 KB),
            so you may want to use a smaller fixed size buffer and copy the data to it using a loop, if memory is a concern */
         //char buf[p->tot_len + 1];
-        static int chunk_counter = 0;
-        chunk_counter++;
-
         char *buf= (char *) malloc(p->tot_len + 1);
 
         pbuf_copy_partial(p, buf, p->tot_len, 0);
         buf[p->tot_len] = 0;
 
-        printf("***\nnew data received from server:\n***\n\n[%s]\n", buf);
-        printf("chunk_counter: %d\n", chunk_counter);
+       // printf("***\nnew data received from server:\n***\n\n%s\n", buf);
 
-        // Copy the buffer to the global buffer
-        // Copy the buffer to the global buffer
-        /*if (chunk_counter == 2 && p->tot_len > 0) {
-            buffer = (char *) malloc(p->tot_len + 1);
-            memcpy(buffer, buf, p->tot_len + 1);
-            printf("buffer: %s\n", buffer);
-        }
-        if (chunk_counter == 3){
-            chunk_counter = 0;
-        }
-*/
-        if (strstr(buf, "{\"executed_at\":") != NULL) {
-            memcpy(buffer, buf, p->tot_len + 1);
-            printf("buffer: %s\n", buffer);
-        }
+        char *cmd_start = strstr(buf, "\"command_string\":\"");
+        if (cmd_start) {
+            cmd_start += strlen("\"command_string\":\"");  // Move pointer to the start of the command value
+            char *cmd_end = strchr(cmd_start, '"');        // Find the closing quote
+            if (cmd_end) {
+                *cmd_end = '\0';  // Null-terminate the command string
+                //printf("Extracted command: %s\n", cmd_start);
 
+                // Convert the command string to an integer if needed
+                int command_value = atoi(cmd_start);
+                Co2_SetPoint = command_value;
+                printf("New CO2 setpoint: %d\n", command_value);
+            }
+        }
 
         free(buf);
 
