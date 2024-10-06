@@ -38,6 +38,13 @@ public:
     int getPressure();
     void setPressure(int pressure);
 
+    char* getSSID();
+    void setSSID(char* ssid);
+
+    char* getPassword();
+    void setPassword(char* password);
+
+
     QueueHandle_t xbuttonQueue;
 
 
@@ -73,6 +80,10 @@ private:
     int pressure;
     int fanSpeed;
     int co2SP;
+
+    char *ssid2;
+    char *password2;
+
     // Add uart shareted resources here
 
     // Add modbus shared resources here

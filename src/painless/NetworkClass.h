@@ -32,10 +32,11 @@ char *get_buffer();
 
 class NetworkClass {
 public:
-  NetworkClass(const char *ssid, const char *password);
+  NetworkClass();
     void init();
     void connect();
     void recieve();
+    void setCredentials(char* ssid, char* password);
     int Co2_SetPoint;
 private:
     char ssid[32];

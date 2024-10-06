@@ -60,3 +60,21 @@ int SharedResources::getPressure() {
 void SharedResources::setPressure(int pressure) {
     SharedResources::pressure = pressure;
 }
+
+
+
+void SharedResources::setSSID(char *ssid) {
+     ssid2 = ssid;
+}
+
+char *SharedResources::getSSID() {
+    return ssid2;
+}
+
+void SharedResources::setPassword(char *password) {
+    password2 = password;
+}
+
+char *SharedResources::getPassword() {
+    return password2;
+}

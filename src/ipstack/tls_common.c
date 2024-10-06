@@ -126,7 +126,6 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
         }
 */
         if (strstr(buf, "{\"executed_at\":") != NULL) {
-            buffer = (char *) malloc(p->tot_len + 1);
             memcpy(buffer, buf, p->tot_len + 1);
             printf("buffer: %s\n", buffer);
         }

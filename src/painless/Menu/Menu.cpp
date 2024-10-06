@@ -191,9 +191,10 @@ void Menu::event(SharedResources::EventType event) {
             vTaskDelay(pdMS_TO_TICKS(4000));
             break;
         case connectwifi:
-            resources->credentialsEntered = true;
-            //connectNow = true;
             MenuEventType = mainMenu;
+            resources->setSSID(ssid2);
+            resources->setPassword(password2);
+            resources->credentialsEntered = true;
             display->mainMenu();
             display->selectmenu(0);
             break;

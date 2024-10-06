@@ -67,6 +67,7 @@ add_executable(${ProjectName}
         painless/Menu/irqs.h
         painless/Menu/irqs.h
         painless/Menu/irqs.cpp
+        eeprom/EEPROM.cpp
         #painless/MenuHandler.cpp
         #painless/MenuHandler.h
         #painless/main2.cpp

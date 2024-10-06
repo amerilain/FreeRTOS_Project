@@ -58,16 +58,16 @@ int main()
     //auto sharedResourcesPtr = std::make_shared<SharedResources>();
     mutex = xSemaphoreCreateMutex();
 
-    /*// Network task
+    // Network task
     xTaskCreate(NetworkTask, "NetworkTask", 6000, (void *) nullptr,
-                tskIDLE_PRIORITY + 1, nullptr);*/
+                tskIDLE_PRIORITY + 1, nullptr);
    /* //EEPROM task
     xTaskCreate(eeprom_task, "EEPROM", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);*/
     // UI task
     xTaskCreate(UI_task, "UI", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
-
+/*
     // Pressure sensor Task
     xTaskCreate(read_pressur, "Pressure", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
@@ -75,11 +75,11 @@ int main()
     xTaskCreate(modbus_task, "Modbus", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
     // Modbus write task
-    /*xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResourcesPtr,
-                tskIDLE_PRIORITY + 1, nullptr);*/
+    *//*xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResourcesPtr,
+                tskIDLE_PRIORITY + 1, nullptr);*//*
     // Co2 injector Task
     xTaskCreate(co2_injector, "Co2Injector", 512, &sharedResourcesPtr,
-                tskIDLE_PRIORITY + 1, nullptr);
+                tskIDLE_PRIORITY + 1, nullptr);*/
 
     //Interrupthandler rotary(ROT_A_PIN, ROT_B_PIN, ROT_SW_PIN & button 0, button 1, button 2);
     xTaskCreate(InterruptHandler, "InterruptHandler", 512, &sharedResourcesPtr,
@@ -226,15 +226,27 @@ void UI_task(void *param){
 void NetworkTask(void *param)
 {
     auto sharedResources = static_cast<SharedResources *>(param);
-    NetworkClass network("Nadim", "nadimahmed");
+    NetworkClass network;
     bool network_status =false;
+    bool transmit = false;
     while(true) {
-        if (!network_status)
-        {
-            network.connect();
+        // print SSID and password
+        printf("SSID=%s\n", sharedResources->getSSID());
+        printf("Password=%s\n", sharedResources->getPassword());
+        if (sharedResources->credentialsEntered){
+
+            network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
+            printf("I am here");
+            sharedResources->credentialsEntered = false;
             network_status = true;
         }
-        if(network_status)
+        if (network_status)
+        {
+            network.connect();
+            transmit = true;
+            network_status = false;
+        }
+        if(transmit)
         {
             network.recieve();
            /* if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint != 0) {
@@ -318,36 +330,6 @@ void InterruptHandler(void *param){
             sw2.buttonPressed = false;
         }
 
-       /* if (rothandlerA.rotaryturned){
-           if(rothandlerA.count == 1){
-              event = SharedResources::ROT_CLOCKWISE;
-           }
-           else if(rothandlerA.count == -1){
-               event = SharedResources::ROT_COUNTER_CLOCKWISE;
-           }
-              xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
-                rothandlerA.rotaryturned = false;
-        }
-        if (rothandlerP.buttonPressed){
-            event = SharedResources::ROT_PRESSED;
-            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
-            rothandlerP.buttonPressed = false;
-        }
-        if (sw0.buttonPressed){
-            event = SharedResources::SW0_PRESSED;
-            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
-            sw0.buttonPressed = false;
-        }
-        if (sw1.buttonPressed){
-            event = SharedResources::SW1_PRESSED;
-            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
-            sw1.buttonPressed = false;
-        }
-        if (sw2.buttonPressed){
-            event = SharedResources::SW2_PRESSED;
-            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
-            sw2.buttonPressed = false;
-        }*/
 
         vTaskDelay(10);
     }

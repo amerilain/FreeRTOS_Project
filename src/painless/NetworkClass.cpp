@@ -13,11 +13,8 @@ const char *req = "POST /talkbacks/53261/commands/execute.json HTTP/1.1\r\n"
                   "\r\n"
                   "api_key=ZZ4SW85BXQ6W18HV";
 
-NetworkClass::NetworkClass(const char *ssid, const char *password) {
-    strcpy(this->ssid, ssid);
-    strcpy(this->password, password);
+NetworkClass::NetworkClass() {
     Co2_SetPoint = 0;
-    init();
 }
 
 void NetworkClass::init() {
@@ -29,7 +26,13 @@ void NetworkClass::init() {
 
 }
 
+void NetworkClass::setCredentials(char* ssid, char* password) {
+    strcpy(this->ssid, ssid);
+    strcpy(this->password, password);
+}
+
 void NetworkClass::connect() {
+    init();
     if (cyw43_arch_wifi_connect_timeout_ms(ssid, password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
         printf("failed to connect\n");
         return;
