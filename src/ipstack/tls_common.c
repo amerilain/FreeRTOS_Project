@@ -33,9 +33,9 @@ static struct altcp_tls_config *tls_config = NULL;
 static char *buffer = "Nadim";
 
 char *get_buffer() {
-    char *buf = buffer;
-    free(buffer);
-    return buf;
+   /* char *buf = buffer;
+    free(buffer);*/
+    return buffer;
 }
 
 static err_t tls_client_close(void *arg) {

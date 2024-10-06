@@ -10,71 +10,86 @@
 #include "PicoOsUart.h"
 #include "ssd1306.h"
 #include "pico/stdlib.h"
-
+#include "semphr.h"
 #include "hardware/timer.h"
+
+#include "painless/SharedResources.h"
+#include <cstdio>
+#include "ModbusClient.h"
+#include "ModbusRegister.h"
+#include "PicoI2C.h"
+#include "painless//PressureSensor.h"
+
+#include "painless/co2valve.h"
+#include"painless/Menu/Menu.h"
+#include "painless/NetworkClass.h"
+#include "eeprom/EEPROM.h"
+
+#include "Button_Rotary_irq/Interrupt_Handler.h"
+#include "queue.h"
+
 extern "C" {
 uint32_t read_runtime_ctr(void) {
     return timer_hw->timerawl;
 }
 }
 
-void tls_task(void *param);
+SemaphoreHandle_t mutex;
+SemaphoreHandle_t i2cmutex;
+
+void NetworkTask(void *param);
 void modbus_task(void *param);
 void read_pressur(void *param);
 void UI_task(void *param);
 void fanSpeedWrite( void *param);
 void co2_injector(void *param);
+void eeprom_task(void *param);
+void InterruptHandler(void *param);
 
 
-#include "painless/SharedResources.h"
+
 
 int main()
 {
     stdio_init_all();
     printf("\nBoot\n");
 
-    SharedResources sharedResources;
+   SharedResources sharedResourcesPtr;
+    //auto sharedResourcesPtr = std::make_shared<SharedResources>();
+    mutex = xSemaphoreCreateMutex();
 
+    /*// Network task
+    xTaskCreate(NetworkTask, "NetworkTask", 6000, (void *) nullptr,
+                tskIDLE_PRIORITY + 1, nullptr);*/
+   /* //EEPROM task
+    xTaskCreate(eeprom_task, "EEPROM", 512, &sharedResourcesPtr,
+                tskIDLE_PRIORITY + 1, nullptr);*/
     // UI task
-    xTaskCreate(UI_task, "UI", 512, &sharedResources,
+    xTaskCreate(UI_task, "UI", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
-    // Network task
 
-    //EEPROM task
-    xTaskCreate(tls_task, "tls test", 6000, (void *) nullptr,
-                tskIDLE_PRIORITY + 1, nullptr);
     // Pressure sensor Task
-    xTaskCreate(read_pressur, "Pressure", 512, &sharedResources,
+    xTaskCreate(read_pressur, "Pressure", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
     //Modbus read task
-    xTaskCreate(modbus_task, "Modbus", 512, &sharedResources,
+    xTaskCreate(modbus_task, "Modbus", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
     // Modbus write task
-    xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResources,
-                tskIDLE_PRIORITY + 1, nullptr);
+    /*xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResourcesPtr,
+                tskIDLE_PRIORITY + 1, nullptr);*/
     // Co2 injector Task
-    xTaskCreate(co2_injector, "Co2Injector", 512, &sharedResources,
+    xTaskCreate(co2_injector, "Co2Injector", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
-    vTaskStartScheduler();
 
+    //Interrupthandler rotary(ROT_A_PIN, ROT_B_PIN, ROT_SW_PIN & button 0, button 1, button 2);
+    xTaskCreate(InterruptHandler, "InterruptHandler", 512, &sharedResourcesPtr,
+                tskIDLE_PRIORITY + 1, nullptr);
+    // Start the scheduler
+    vTaskStartScheduler();
     while(true){};
 }
 
-#include <cstdio>
-#include "ModbusClient.h"
-#include "ModbusRegister.h"
 
-// We are using pins 0 and 1, but see the GPIO function select table in the
-// datasheet for information on which other pins can be used.
-#if 0
-#define UART_NR 0
-#define UART_TX_PIN 0
-#define UART_RX_PIN 1
-#else
-#define UART_NR 1
-#define UART_TX_PIN 4
-#define UART_RX_PIN 5
-#endif
 
 #define BAUD_RATE 9600
 #define STOP_BITS 2 // for real system (pico simualtor also requires 2 stop bits)
@@ -94,71 +109,47 @@ void modbus_task(void *param) {
     gpio_set_dir(button, GPIO_IN);
     gpio_pull_up(button);
 
-
-
-    auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
-    auto rtu_client{std::make_shared<ModbusClient>(uart)};
+   //uto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
+  //auto rtu_client{std::make_shared<ModbusClient>(uart)};
+    auto rtu_client{std::make_shared<ModbusClient>(sharedResources->uart420)};
     ModbusRegister co(rtu_client, 240, 256);
     ModbusRegister rh(rtu_client, 241, 256);
     ModbusRegister t(rtu_client, 241, 257);
-    ModbusRegister produal(rtu_client, 1, 0);
-    produal.write(100);
-    vTaskDelay((100));
-    produal.write(500);
-    int co2 = 0;
-    int speed = 90;
-    while (true) {
-        gpio_put(led_pin, !gpio_get(led_pin)); // toggle  led
-        /*co2 = co.read();
-        printf("CO=%d\n", co2);
-        vTaskDelay(5);
-        printf("RH=%5.1f%%\n", rh.read() / 10.0);
-        vTaskDelay(5);
-        printf("T =%5.1f%%\n", t.read() / 10.0);*/
-        co2= co.read();
-        sharedResources->setCo2(co2);
-        vTaskDelay(5);
-        sharedResources->setRH(rh.read());
-        vTaskDelay(5);
-        sharedResources->setTem(t.read());
-        printf("CO2=%d\n", sharedResources->getCo2());
-        //print speed
-        printf("Speed=%d\n", speed);
 
+    vTaskDelay((100));
+
+    int co2 = 0;
+
+    while (true) {
+        if (xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE){
+            gpio_put(led_pin, !gpio_get(led_pin)); // toggle  led
+            co2= co.read();
+            sharedResources->setCo2(co2);
+            vTaskDelay(5);
+            sharedResources->setRH(rh.read());
+            vTaskDelay(5);
+            sharedResources->setTem(t.read());
+           // printf("CO2=%d\n", sharedResources->getCo2());
+            xSemaphoreGive(mutex);
+        }
         vTaskDelay(500);
     }
 }
 
-#include "PicoI2C.h"
-#include "painless//PressureSensor.h"
 void read_pressur(void *param) {
-    /*auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
-    uint8_t data[1] = {0xF1};
-    uint8_t values[2] = {0};
-    int pressure;
-    int sensorValue;
-    while (true) {
-        i2cbus->transaction(0x40, data, 1, values, 2);
-       // i2cbus->read(0x40, values, 2);
-        pressure = ( (values[0] << 8) | values[1]) /240 *0.95;  // 0.95 is based on sea level ( based on datasheet)
-        pressure = (pressure <= 0) ? 0 : (pressure >= 127) ? 0 : pressure;
-        printf("Pressurelast=%d\n", pressure);
-        vTaskDelay(3000);
-
-    }*/
     auto sharedResources = static_cast<SharedResources *>(param);
-    auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
-    PressureSensor sensor(i2cbus, 0x40);
+    //auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
+    PressureSensor sensor(sharedResources->i2cbus, 0x40);
 
     while (true) {
         sharedResources->setPressure(sensor.readPressure());
-        printf("Pressure=%d\n", sharedResources->getPressure());
+        //printf("Pressure=%d\n", sharedResources->getPressure());
         vTaskDelay(100);
     }
 
 }
 
-#include "painless/co2valve.h"
+
 void co2_injector(void *param) {
     auto sharedResources = static_cast<SharedResources *>(param);
     co2valve co2(27);
@@ -180,54 +171,185 @@ void co2_injector(void *param) {
 
 void fanSpeedWrite( void *param){
     auto sharedResources = static_cast<SharedResources *>(param);
-    auto uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
-    auto rtu_client{std::make_shared<ModbusClient>(uart)};
+    //to uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
+    auto rtu_client{std::make_shared<ModbusClient>(sharedResources->uart420)};
     ModbusRegister produal(rtu_client, 1, 0);
     uint speed = 0;
     while(true){
-        // Read the co2 value
-        if ( sharedResources->getCo2() > sharedResources->getCo2SP()){
+        if(xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE){
+            if ( sharedResources->getCo2() > sharedResources->getCo2SP()){
+                produal.write(speed < 200 ? speed+=10 : 200);
+            }
+            if( sharedResources->getCo2() < sharedResources->getCo2SP()){
+                produal.write(speed <= 0 ? 0 : speed--);
+            }
+            sharedResources->setFanSpeed(speed);
+            /*printf("Speed=%d\n", speed);
+            printf("Shemaphore taken\n");*/
+            xSemaphoreGive(mutex);
+        }
+       /* if ( sharedResources->getCo2() > sharedResources->getCo2SP()){
             produal.write(speed < 1000 ? speed+=10 : 1000);
         }
         if( sharedResources->getCo2() < sharedResources->getCo2SP()){
             produal.write(speed <= 0 ? 0 : speed--);
-        }
-        vTaskDelay(10000);
+        }*/
+        vTaskDelay(100);
     }
 
 }
+
 
 void UI_task(void *param){
-    auto sharedResources = static_cast<SharedResources *>(param);
-
+    auto sharedResourcesPtr = static_cast<SharedResources *>(param);
+    //auto sharedResourcesPtr = std::make_shared<SharedResources>();
+    auto display {std::make_shared<TFTDisplay>(sharedResourcesPtr->i2cbus)};
+    Menu menu(display , static_cast<std::shared_ptr<SharedResources>>(sharedResourcesPtr));
+    SharedResources::EventType event;
+    display->mainMenu();
     while(true){
-        //printf("CO2=%d\n", sharedResources->getCo2());
-        printf("RH=%5.1f%%\n", sharedResources->getRH() / 10.0);
-        printf("T =%5.1f%%\n", sharedResources->getTem() / 10.0);
-        //printf("Pressure=%d\n", sharedResources->getPressure());
-
-        vTaskDelay(1000);
-    }
-}
-
-#include "painless/NetworkClass.h"
-
-void tls_task(void *param)
-{
-    NetworkClass network("Nadim", "nadimahmed");
-    bool network_status =false;
-    while(true) {
-        if (network_status == false)
-        {
-            network.connect();
-            network_status = true;
-        }
-        if(network_status == true)
-        {
-            network.recieve();
-            vTaskDelay(20000);
+      /*  if (xQueueReceive(sharedResources->xbuttonQueue, &event, portMAX_DELAY) == pdTRUE){
+           menu.event(event);
+        }*/
+      menu.event(sharedResourcesPtr->Event);
+      //printf("MENU sHOW\n");
+      if (sharedResourcesPtr->isRotaryClockwise){
+          printf("Rotary Clockwise\n");
         }
 
         vTaskDelay(100);
     }
+}
+
+
+
+void NetworkTask(void *param)
+{
+    auto sharedResources = static_cast<SharedResources *>(param);
+    NetworkClass network("Nadim", "nadimahmed");
+    bool network_status =false;
+    while(true) {
+        if (!network_status)
+        {
+            network.connect();
+            network_status = true;
+        }
+        if(network_status)
+        {
+            network.recieve();
+           /* if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint != 0) {
+                sharedResources->setCo2SP(network.Co2_SetPoint);
+                printf("CO2 Set Point in main=%d\n", sharedResources->getCo2SP());
+            }*/
+            vTaskDelay(10);
+        }
+
+        vTaskDelay(100);
+    }
+}
+
+void eeprom_task(void *param){
+
+    auto sharedResources = static_cast<SharedResources *>(param);
+    auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
+    EEPROM eeprom (i2cbus, 0x50);
+    const char *SSID = "Nadim";
+    const char *PASS = "nadimahmed";
+    eeprom.writeToMemory(0, (uint8_t*)SSID, sizeof(sharedResources->getCo2SP()));
+    eeprom.writeToMemory(64, (uint8_t*)PASS, sizeof(sharedResources->getCo2SP()));
+    eeprom.writeToMemory(128, (uint8_t*)sharedResources->getCo2SP(), sizeof(sharedResources->getCo2SP()));
+    vTaskDelay(1000);
+
+
+    while(true){
+       /* if (xSemaphoreTake(i2cmutex, portMAX_DELAY) == pdTRUE){
+            eeprom.writeToMemory(0, (uint8_t*)SSID, sizeof(sharedResources->getCo2SP()));
+            eeprom.writeToMemory(64, (uint8_t*)PASS, sizeof(sharedResources->getCo2SP()));
+            eeprom.writeToMemory(128, (uint8_t*)sharedResources->getCo2SP(), sizeof(sharedResources->getCo2SP()));
+            xSemaphoreGive(mutex);
+        }*/
+
+        vTaskDelay(1000);
+    }
+
+}
+
+
+void InterruptHandler(void *param){
+    auto sharedResources = static_cast<SharedResources *>(param);
+    uint8_t rotA = 10;
+    uint8_t rotB = 11;
+    uint8_t rotP = 12;
+    uint8_t SW0 = 9;
+    uint8_t SW1 = 8;
+    uint8_t SW2 = 7;
+    Interrupt_Handler rothandlerA(rotA);
+    Interrupt_Handler rothandlerP(rotP);
+    Interrupt_Handler sw0(SW0);
+    Interrupt_Handler sw1(SW1);
+    Interrupt_Handler sw2(SW2);
+    SharedResources::EventType event;
+
+    while(true){
+
+        if(rothandlerA.rotaryturned){
+            if(rothandlerA.count == 1){
+                sharedResources->isRotaryClockwise = true;
+            }
+            else if(rothandlerA.count == -1){
+                sharedResources->isRotaryCounterClockwise = true;
+            }
+            rothandlerA.rotaryturned = false;
+        }
+        if (rothandlerP.buttonPressed){
+            sharedResources->isRotaryPressed = true;
+            rothandlerP.buttonPressed = false;
+        }
+        if (sw0.buttonPressed){
+            sharedResources->isSW0Pressed = true;
+            sw0.buttonPressed = false;
+        }
+        if (sw1.buttonPressed){
+            sharedResources->isSW1Pressed = true;
+            sw1.buttonPressed = false;
+        }
+        if (sw2.buttonPressed){
+            sharedResources->isSW2Pressed = true;
+            sw2.buttonPressed = false;
+        }
+
+       /* if (rothandlerA.rotaryturned){
+           if(rothandlerA.count == 1){
+              event = SharedResources::ROT_CLOCKWISE;
+           }
+           else if(rothandlerA.count == -1){
+               event = SharedResources::ROT_COUNTER_CLOCKWISE;
+           }
+              xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
+                rothandlerA.rotaryturned = false;
+        }
+        if (rothandlerP.buttonPressed){
+            event = SharedResources::ROT_PRESSED;
+            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
+            rothandlerP.buttonPressed = false;
+        }
+        if (sw0.buttonPressed){
+            event = SharedResources::SW0_PRESSED;
+            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
+            sw0.buttonPressed = false;
+        }
+        if (sw1.buttonPressed){
+            event = SharedResources::SW1_PRESSED;
+            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
+            sw1.buttonPressed = false;
+        }
+        if (sw2.buttonPressed){
+            event = SharedResources::SW2_PRESSED;
+            xQueueSend(sharedResources->xbuttonQueue, &event, portMAX_DELAY);
+            sw2.buttonPressed = false;
+        }*/
+
+        vTaskDelay(10);
+    }
+
 }

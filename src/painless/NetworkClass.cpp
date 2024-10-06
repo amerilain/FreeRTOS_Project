@@ -16,6 +16,7 @@ const char *req = "POST /talkbacks/53261/commands/execute.json HTTP/1.1\r\n"
 NetworkClass::NetworkClass(const char *ssid, const char *password) {
     strcpy(this->ssid, ssid);
     strcpy(this->password, password);
+    Co2_SetPoint = 0;
     init();
 }
 
@@ -36,7 +37,7 @@ void NetworkClass::connect() {
 }
 
 void NetworkClass::recieve() {
-        run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, req, TLS_CLIENT_TIMEOUT_SECS);
+    run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, req, TLS_CLIENT_TIMEOUT_SECS);
 
     std::string json_data = get_buffer(); // Assuming 'buffer' contains the JSON data
 
@@ -47,7 +48,9 @@ void NetworkClass::recieve() {
         size_t end = json_data.find("\"", start);
         if (end != std::string::npos) {
             std::string command_string = json_data.substr(start, end - start);
+            Co2_SetPoint = std::stoi(command_string);
            printf("command_string: %s\n", command_string.c_str());
+            printf("Co2_SetPoint: %d\n", Co2_SetPoint);
         }
     }
         //printf("buffer received at NetworkClass: %s\n", get_buffer());

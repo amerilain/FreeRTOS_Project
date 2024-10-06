@@ -49,6 +49,24 @@ add_executable(${ProjectName}
         painless/NetworkClass.h
         painless/SharedResources.h
         painless/SharedResources.cpp
+        painless/Menu/Menu.h
+        painless/Menu/Menu.cpp
+        painless/Menu/MainMenu.h
+        painless/Menu/MainMenu.cpp
+        painless/Menu/Co2SetMenu.h
+        painless/Menu/Co2SetMenu.h
+        painless/Menu/WifiMenu.h
+        painless/Menu/WifiMenu.h
+        painless/Menu/WifiMenu.cpp
+        painless/Menu/StatusMenu.h
+        painless/Menu/MenuHandler.h
+        painless/Menu/MenuHandler.cpp
+        painless/Menu/CredentialMenu.h
+        painless/Menu/CredentialMenu.cpp
+        painless/Menu/StatusMenu.cpp
+        painless/Menu/irqs.h
+        painless/Menu/irqs.h
+        painless/Menu/irqs.cpp
         #painless/MenuHandler.cpp
         #painless/MenuHandler.h
         #painless/main2.cpp

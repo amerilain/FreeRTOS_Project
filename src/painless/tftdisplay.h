@@ -19,8 +19,8 @@ public:
     void displayControlSpeed(uint16_t speed);
     void welcomeScreen();
     void mainMenu();
-    void wifiandmqttmenu();
-    void selectwifiandmqttmenu(int selection);
+    void wifiMMenu();
+    void selectwifimenu(int selection);
     void selectmenu(int selection);
     void displayKeyboard(int number);
     void selectChar(int selection);
@@ -40,6 +40,7 @@ public:
                     0x04, 0x08
             };
 
+    void Cc2Setpoint(uint16_t speed);
 
 private:
     std::array<char, 26> alphabet = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
@@ -49,6 +50,8 @@ private:
                                                   '-', '_', '=', '+', '[', ']', '{', '}', ';', ':',
                                                   '\'', '\"', ',', '.', '<', '>'};
     uint16_t width;
+
+
 
 };
 

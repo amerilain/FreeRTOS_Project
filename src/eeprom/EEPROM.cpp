@@ -62,4 +62,3 @@ void EEPROM::readFromMemory(uint16_t memory_address, uint8_t* data, size_t lengt
         printf("Failed to take mutex for EEPROM read operation.\n");
     }
 }
-

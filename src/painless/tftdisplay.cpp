@@ -43,6 +43,15 @@ void TFTDisplay::displayControlSpeed(uint16_t speed) {
     rect(0, 40,width , 20, 1, true);
     show();
 }
+void TFTDisplay::Cc2Setpoint(uint16_t speed) {
+    std::string FSmessage = std::to_string(speed) + " ppm";
+    width = (speed * 128) / 1500;
+    fill(0);
+    text("Co2 Set Point ", 0, 0);
+    text(FSmessage, 45, 20);
+    rect(0, 40,width , 20, 1, true);
+    show();
+}
 
 void TFTDisplay::welcomeScreen() {
     fill(0);
@@ -55,14 +64,14 @@ void TFTDisplay::welcomeScreen() {
 void TFTDisplay::mainMenu() {
     fill(0);
     text("Main Menu", 30, 2);
-    text("Manual Mode", 0, 20);
-    text("Automatic Mode", 0, 30);
-    text( "MQTT & WiFi", 0, 42);
+    text("Co2 SetPoint", 0, 20);
+    text("Status", 0, 30);
+    text( "WiFi Connection", 0, 42);
     text("Status", 0, 54);
     show();
 }
 
-void TFTDisplay::wifiandmqttmenu() {
+void TFTDisplay::wifiMMenu() {
     fill(0);
     text("Connect", 0, 15);
     text("New Credentials", 0, 30);
@@ -70,7 +79,7 @@ void TFTDisplay::wifiandmqttmenu() {
     show();
 }
 
-void TFTDisplay::selectwifiandmqttmenu(int selection) {
+void TFTDisplay::selectwifimenu(int selection) {
     if(selection == 0){
         rect(0, 11, 128, 15, 1);
         rect(0, 26, 128, 15, 0);
@@ -231,8 +240,8 @@ void TFTDisplay::displayKeyboard(int number) {
 }
 void TFTDisplay::credenttialsMenu() {
     fill(0);
-    text("Wifi CredentialsMenu", 0, 15);
-    text("MQTT CredentialsMenu", 0, 30);
+    text("SSID", 0, 15);
+    text("Password", 0, 30);
     text("Return", 0,45 );
     show();
 }

@@ -36,10 +36,11 @@ public:
     void init();
     void connect();
     void recieve();
-
+    int Co2_SetPoint;
 private:
     char ssid[32];
     char password[32];
+
     uint32_t event;
 
 
