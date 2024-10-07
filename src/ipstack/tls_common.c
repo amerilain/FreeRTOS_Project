@@ -103,7 +103,7 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
         pbuf_copy_partial(p, buf, p->tot_len, 0);
         buf[p->tot_len] = 0;
 
-       // printf("***\nnew data received from server:\n***\n\n%s\n", buf);
+        printf("***\nnew data received from server:\n***\n\n%s\n", buf);
 
         char *cmd_start = strstr(buf, "\"command_string\":\"");
         if (cmd_start) {

@@ -35,7 +35,7 @@ uint32_t read_runtime_ctr(void) {
 }
 
 SemaphoreHandle_t mutex;
-SemaphoreHandle_t i2cmutex;
+
 
 void NetworkTask(void *param);
 void modbus_task(void *param);
@@ -67,7 +67,6 @@ int main()
     // UI task
     xTaskCreate(UI_task, "UI", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
-/*
     // Pressure sensor Task
     xTaskCreate(read_pressur, "Pressure", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
@@ -75,11 +74,11 @@ int main()
     xTaskCreate(modbus_task, "Modbus", 512, &sharedResourcesPtr,
                 tskIDLE_PRIORITY + 1, nullptr);
     // Modbus write task
-    *//*xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResourcesPtr,
-                tskIDLE_PRIORITY + 1, nullptr);*//*
+    xTaskCreate(fanSpeedWrite, "FanSpeed", 512, &sharedResourcesPtr,
+                tskIDLE_PRIORITY + 1, nullptr);
     // Co2 injector Task
     xTaskCreate(co2_injector, "Co2Injector", 512, &sharedResourcesPtr,
-                tskIDLE_PRIORITY + 1, nullptr);*/
+                tskIDLE_PRIORITY + 1, nullptr);
 
     //Interrupthandler rotary(ROT_A_PIN, ROT_B_PIN, ROT_SW_PIN & button 0, button 1, button 2);
     xTaskCreate(InterruptHandler, "InterruptHandler", 512, &sharedResourcesPtr,
@@ -224,14 +223,12 @@ void UI_task(void *param){
 void NetworkTask(void *param)
 {
     auto sharedResources = static_cast<SharedResources *>(param);
-    NetworkClass network;
+    NetworkClass network( static_cast<std::shared_ptr<SharedResources>>(sharedResources));
     bool network_status =false;
     bool transmit = false;
+    //network.dataSendTimer = xTimerCreate("DataSendTimer", pdMS_TO_TICKS(1000), pdTRUE, (void *)&network, network.dataSendTimerCallback);
     while(true) {
-        // print SSID and password
-
         if (sharedResources->credentialsEntered){
-
             //network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
             network.setCredentials("Nadim", "nadimahmed");
             printf("I am here");
@@ -241,47 +238,54 @@ void NetworkTask(void *param)
         if (network_status)
         {
             network.connect();
+            vTaskDelay(10000);
             transmit = true;
+            network.transmit = true;
             network_status = false;
         }
         if(transmit)
         {
             network.recieve();
             printf("Co2 Set Point in network=%d\n", network.Co2_SetPoint);
-            network.send(500, 1000, 2000, 3000, 4000);
-           /* if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint != 0) {
-                sharedResources->setCo2SP(network.Co2_SetPoint);
+            network.send(sharedResources->getCo2(), sharedResources->getTem(), sharedResources->getRH(), sharedResources->getFanSpeed(), sharedResources->getPressure());
+           /* network.send(500, 1000, 2000, 3000, 4000);
+            if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint >= 200) {
+                sharedResources->setCo2SP(network.Co2_SetPoint);*/
                 printf("CO2 Set Point in main=%d\n", sharedResources->getCo2SP());
-            }*/
+            }
             vTaskDelay(10);
         }
-
         vTaskDelay(100);
     }
-}
 
 void eeprom_task(void *param){
 
     auto sharedResources = static_cast<SharedResources *>(param);
     auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
     EEPROM eeprom (i2cbus, 0x50);
-    const char *SSID = "Nadim";
-    const char *PASS = "nadimahmed";
-    eeprom.writeToMemory(0, (uint8_t*)SSID, sizeof(sharedResources->getCo2SP()));
-    eeprom.writeToMemory(64, (uint8_t*)PASS, sizeof(sharedResources->getCo2SP()));
-    eeprom.writeToMemory(128, (uint8_t*)sharedResources->getCo2SP(), sizeof(sharedResources->getCo2SP()));
-    vTaskDelay(1000);
-
+    const char *SSID = "";
+    const char *PASS = "";
+    const char *CO2SP = "";
+    bool boot = true;
 
     while(true){
-       /* if (xSemaphoreTake(i2cmutex, portMAX_DELAY) == pdTRUE){
-            eeprom.writeToMemory(0, (uint8_t*)SSID, sizeof(sharedResources->getCo2SP()));
-            eeprom.writeToMemory(64, (uint8_t*)PASS, sizeof(sharedResources->getCo2SP()));
-            eeprom.writeToMemory(128, (uint8_t*)sharedResources->getCo2SP(), sizeof(sharedResources->getCo2SP()));
-            xSemaphoreGive(mutex);
-        }*/
-
-        vTaskDelay(1000);
+        if(sharedResources->credentialsEntered){
+            eeprom.writeToMemory(0, (uint8_t*)sharedResources->getSSID(), 64);
+            eeprom.writeToMemory(64, (uint8_t*)sharedResources->getPassword(), 64);
+            sharedResources->credentialsEntered = false;
+        }
+       // read from the eeprom
+        if(boot){
+            eeprom.readFromMemory(0, (uint8_t*)SSID, 64);
+            eeprom.readFromMemory(64, (uint8_t*)PASS, 64);
+            eeprom.readFromMemory(128, (uint8_t*)CO2SP, 64);
+            sharedResources->setSSID((char*)SSID);
+            sharedResources->setPassword((char*)PASS);
+            sharedResources->setCo2SP(atoi(CO2SP));
+            sharedResources->credentialsEntered = true;
+            boot = false;
+        }
+        vTaskDelay(100);
     }
 
 }

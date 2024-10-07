@@ -11,6 +11,9 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
+#include "task.h"
+#include "timers.h"
+#include "painless/SharedResources.h"
 
 #define TLS_CLIENT_SERVER        "api.thingspeak.com"
 /*
@@ -32,17 +35,23 @@ int get_co2_setpoint();
 
 class NetworkClass {
 public:
-  NetworkClass();
+  NetworkClass(std::shared_ptr<SharedResources> sharedResources );
     void init();
     void connect();
     void recieve();
     void send(int co2, int tem, int rh, int fanSpeed, int pressure);
     void setCredentials(char* ssid, char* password);
+    static void dataSendTimerCallback(TimerHandle_t xTimer);
+    static void dataReceiveTimerCallback(TimerHandle_t xTimer);
     int Co2_SetPoint;
+    bool transmit = false;
+    TimerHandle_t dataSendTimer;
+    TimerHandle_t dataReceiveTimer;
+
 private:
     char ssid[32];
     char password[32];
-
+    std::shared_ptr<SharedResources> resources;
     uint32_t event;
 
     const char *req = "POST /talkbacks/53261/commands/execute.json HTTP/1.1\r\n"

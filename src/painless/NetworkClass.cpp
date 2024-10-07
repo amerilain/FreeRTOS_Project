@@ -7,8 +7,12 @@
 
 
 
-NetworkClass::NetworkClass() {
-    Co2_SetPoint = 0;
+NetworkClass::NetworkClass(std::shared_ptr<SharedResources> sharedResources) : resources(sharedResources) {
+   Co2_SetPoint = 0;
+ /*   //dataSendTimer = xTimerCreate("dataSendTimer", pdMS_TO_TICKS(1000), pdTRUE, this, dataSendTimerCallback);
+   dataReceiveTimer = xTimerCreate("dataReceiveTimer", pdMS_TO_TICKS(10000), pdTRUE, this, dataReceiveTimerCallback);
+   // xTimerStart(dataSendTimer, 0);
+    xTimerStart(dataReceiveTimer, portMAX_DELAY);*/
 }
 
 void NetworkClass::init() {
@@ -35,25 +39,7 @@ void NetworkClass::connect() {
 
 void NetworkClass::recieve() {
     run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, req, TLS_CLIENT_TIMEOUT_SECS);
-
     Co2_SetPoint = get_co2_setpoint();
-
-/*    *//*std::string json_data = get_buffer(); // Assuming 'buffer' contains the JSON data
-
-    std::string key = "\"command_string\":\"";
-    size_t start = json_data.find(key);
-    if (start != std::string::npos) {
-        start += key.length();
-        size_t end = json_data.find("\"", start);
-        if (end != std::string::npos) {
-            std::string command_string = json_data.substr(start, end - start);
-            Co2_SetPoint = std::stoi(command_string);
-           printf("command_string: %s\n", command_string.c_str());
-            printf("Co2_SetPoint: %d\n", Co2_SetPoint);
-        }*//*
-    }*/
-        //printf("buffer received at NetworkClass: %s\n", get_buffer());
-
    printf("Co2_SetPoint: %d\n",Co2_SetPoint);
 }
 
@@ -63,6 +49,31 @@ void NetworkClass::send( int co2, int temp, int hum, int fan, int AP) {
                  "Host: api.thingspeak.com\r\n"
                  "\r\n", co2, temp, hum, fan, AP);
     run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, resp, TLS_CLIENT_TIMEOUT_SECS);
+}
+
+void NetworkClass::dataSendTimerCallback(TimerHandle_t xTimer) {
+    auto instance = static_cast<NetworkClass *>(pvTimerGetTimerID(xTimer));
+    if(instance->transmit) {
+        int co2 = instance->resources->getCo2();
+        int temp = instance->resources->getTem();
+        int hum = instance->resources->getRH();
+        int fan = instance->resources->getFanSpeed();
+        int AP = instance->resources->getPressure();
+        instance->send(co2, temp, hum, fan, AP);
+        printf("Data sent\n");
+    }
+
+}
+
+void NetworkClass::dataReceiveTimerCallback(TimerHandle_t xTimer) {
+    auto instance = static_cast<NetworkClass *>(pvTimerGetTimerID(xTimer));
+    //vTaskDelay(pdMS_TO_TICKS(20000));
+    if(instance->transmit){
+        printf("waiting to received\n");
+        instance->recieve();
+        printf("Data received\n");
+    }
+
 }
 
 
