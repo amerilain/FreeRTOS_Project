@@ -145,7 +145,7 @@ void read_pressur(void *param) {
     while (true) {
         sharedResources->setPressure(sensor.readPressure());
         //printf("Pressure=%d\n", sharedResources->getPressure());
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 
 }
@@ -233,7 +233,7 @@ void UI_task(void *param){
       //printf("MENU sHOW\n");
 
 
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 }
 
@@ -248,9 +248,10 @@ void NetworkTask(void *param) {
     while (true) {
         if (sharedResources->credentialsEntered) {
             network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
-            network.setCredentials("Nadim", "nadimahmed");
+            //network.setCredentials("Nadim", "nadimahmed");
             printf("I am here");
             sharedResources->credentialsEntered = false;
+            sharedResources->writeTOeeprom = true;
             network_status = true;
         }
         if (network_status) {
@@ -276,9 +277,8 @@ void NetworkTask(void *param) {
                 sharedResources->setCo2SP(network.Co2_SetPoint);
             }
 
-            vTaskDelay(10);
         }
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 }
 
@@ -287,35 +287,38 @@ void eeprom_task(void *param){
     auto sharedResources = static_cast<SharedResources *>(param);
     auto i2cbus{std::make_shared<PicoI2C>(0, 100000)};
     EEPROM eeprom (i2cbus, 0x50);
-    const char *SSID = "";
-    const char *PASS = "";
-    char readbuffer[64];
-    char ssidbuffer[64];
-    char passbuffer[64];
+    char readbuffer[64] = {0};
+    char ssidbuffer[64] = {0};
+   char passbuffer[64] = {0};
     bool boot = true;
     std::string CO2SP;
     int oldCO2SP = 0;
     int newCO2SP = 0;
+    /*char PASS[64] = {0}; // Initialize all elements to 0
+    snprintf(PASS, sizeof(PASS), "%s", "nadimahmed"); // Convert the password to a string
+    eeprom.writeToMemory(64, (uint8_t*)PASS, 62); // Write the string to the EEPROM*/
     while(true){
-        if(sharedResources->credentialsEntered){
+        if(sharedResources->writeTOeeprom){
             eeprom.writeToMemory(0, (uint8_t*)sharedResources->getSSID(), 62);
             eeprom.writeToMemory(64, (uint8_t*)sharedResources->getPassword(), 62);
-            sharedResources->credentialsEntered = false;
+            sharedResources->writeTOeeprom = false;
         }
        // read from the eeprom
         if(boot){
-           /* eeprom.readFromMemory(0, (uint8_t*)SSID, 62);
-            eeprom.readFromMemory(64, (uint8_t*)PASS, 62);*/
-            /*vTaskDelay(1000);
-            int CO2SPint = sharedResources->getCo2SP();
-            CO2SP = std::to_string(CO2SPint);
-            const char* numberChar = CO2SP.c_str();
-            printf("CO2 set point from main: %s\n",numberChar);
-            eeprom.writeToMemory(128, (uint8_t*)numberChar, 62);*/
+            eeprom.readFromMemory(0, (uint8_t*)ssidbuffer, 62);
+            printf("SSID from eeprom: %s\n", ssidbuffer);
+            // Read from the EEPROM
+            eeprom.readFromMemory(64, (uint8_t*)passbuffer, 62); // Read the string from the EEPROM
+            printf("Password from eeprom: %s\n", passbuffer); // Print the string
+            if(ssidbuffer != NULL && passbuffer != NULL){
+                sharedResources->setSSID(ssidbuffer);
+                sharedResources->setPassword(passbuffer);
+                sharedResources->credentialsEntered = true;
+            }
             vTaskDelay(1000);
             eeprom.readFromMemory(128, (uint8_t*)readbuffer, 62);
-            printf("SSID=%s\n", SSID);
-            printf("PASS=%s\n", PASS);
+            //printf("SSID=%s\n", ssidbuffer);
+            printf("PASS=%s\n", passbuffer);
             printf("CO2 set point from eeprom: %s\n",readbuffer);
             sharedResources->setCo2SP(atoi(readbuffer));
             boot = false;
@@ -335,8 +338,6 @@ void eeprom_task(void *param){
     }
 
 }
-
-
 
 void InterruptHandler(void *param){
     auto sharedResources = static_cast<SharedResources *>(param);

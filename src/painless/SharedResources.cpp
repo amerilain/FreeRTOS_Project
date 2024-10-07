@@ -11,6 +11,7 @@ SharedResources::SharedResources() {
     fanSpeed = 0;
     co2SP = 300;
     xbuttonQueue = xQueueCreate(10, sizeof(EventType));
+
 }
 
 int SharedResources::getCo2() {

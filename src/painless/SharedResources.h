@@ -71,6 +71,7 @@ public:
     bool isSW2Pressed = false;
 
     bool credentialsEntered = false;
+    bool writeTOeeprom = false;
 
 
 private:
