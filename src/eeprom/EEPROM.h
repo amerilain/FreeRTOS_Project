@@ -18,8 +18,13 @@ private:
     std::shared_ptr<PicoI2C> i2c;
     uint16_t device_address;
 
+<<<<<<< HEAD
     // CRC Calculation
     uint16_t crc16(const uint8_t* data, size_t length);
+=======
+    uint16_t crc16(const uint8_t* data_p, size_t length);
+
+>>>>>>> eec25e6d4ffb37645dd10088720d09927bbf9738
 };
 
 #endif // EEPROM_H
