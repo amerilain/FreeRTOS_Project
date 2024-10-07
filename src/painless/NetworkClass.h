@@ -39,7 +39,8 @@ public:
     void init();
     void connect();
     void recieve();
-    void send(int co2, int tem, int rh, int fanSpeed, int pressure);
+    void send(int co2, int tem, int rh, int fanSpeed, int Co2_SetPoint);
+    void sendAndreceive(int co2, int tem, int rh, int fanSpeed, int Co2_SetPoint);
     void setCredentials(char* ssid, char* password);
     static void dataSendTimerCallback(TimerHandle_t xTimer);
     static void dataReceiveTimerCallback(TimerHandle_t xTimer);
@@ -63,6 +64,15 @@ private:
                       "\r\n"
                       "api_key=ZZ4SW85BXQ6W18HV";
 
+
+    const char *req2 = "POST /update.json HTTP/1.1\r\n"
+                      "Host: api.thingspeak.com\r\n"
+                      "User-Agent: PicoW\r\n"
+                      "Accept: */*\r\n"
+                      "Content-Length: 65\r\n"
+                      "Content-Type: application/x-www-form-urlencoded\r\n"
+                      "\r\n"
+                      "field1=370&api_key=1WWH2NWXSM53URR5&talkback_key=371DAWENQKI6J8DD";
 
 
 };

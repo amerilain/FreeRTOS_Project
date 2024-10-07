@@ -47,8 +47,8 @@ void Menu::mainmenu() {
     }
 }
 void Menu::statusmenu() {
-    display->displayStatus(resources->getCo2(),resources->getTem(),
-                           resources->getRH(),resources->getFanSpeed(),
+    display->displayStatus(resources->getCo2(),resources->getTem()/10,
+                           resources->getRH()/10,resources->getFanSpeed()/10,
                            resources->getPressure(), wifi_signal);
     if (resources->isRotaryPressed) {
         resources->isRotaryPressed = false;

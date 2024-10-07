@@ -125,15 +125,15 @@ void modbus_task(void *param) {
             gpio_put(led_pin, !gpio_get(led_pin)); // toggle  led
             co2= co.read();
             sharedResources->setCo2(co2);
-            vTaskDelay(pdMS_TO_TICKS(30));
+            vTaskDelay(pdMS_TO_TICKS(5));
             sharedResources->setRH(rh.read());
-            vTaskDelay(pdMS_TO_TICKS(30));
+            vTaskDelay(pdMS_TO_TICKS(5));
             sharedResources->setTem(t.read());
-            vTaskDelay(pdMS_TO_TICKS(30));
+            vTaskDelay(pdMS_TO_TICKS(5));
            // printf("CO2=%d\n", sharedResources->getCo2());
             xSemaphoreGive(sharedResources->mutex);
         }
-        vTaskDelay(500);
+        vTaskDelay(10);
     }
 }
 
@@ -157,16 +157,17 @@ void co2_injector(void *param) {
     int Co2 = 0;
     int Co2SP = 0;
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(30000));
+        vTaskDelay(pdMS_TO_TICKS(40000));
+        printf("CO2 Injector Task starting\n");
         // If level is low then open the valve
         Co2 = sharedResources->getCo2();
         printf("CO2 before inject=%d\n", Co2);
         Co2SP = sharedResources->getCo2SP();
 
-        if (Co2 > Co2SP) {
+        if (Co2 < Co2SP) {
             co2.open();
             printf("CO2 Valve Open\n");
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(2000));
             co2.close();
             Co2 = sharedResources->getCo2();
             printf("CO2 after inject=%d\n", Co2);
@@ -184,6 +185,8 @@ void fanSpeedWrite( void *param){
     //to uart{std::make_shared<PicoOsUart>(UART_NR, UART_TX_PIN, UART_RX_PIN, BAUD_RATE, STOP_BITS)};
     auto rtu_client{std::make_shared<ModbusClient>(sharedResources->uart420)};
     ModbusRegister produal(rtu_client, 1, 0);
+    produal.write(0);
+    vTaskDelay(pdMS_TO_TICKS(10));
     uint speed = 0;
     bool more =false;
     bool less = true;
@@ -191,13 +194,15 @@ void fanSpeedWrite( void *param){
         if(xSemaphoreTake(sharedResources->mutex, portMAX_DELAY) == pdTRUE){
             if (sharedResources->getCo2() > 2000){
                 more = true;
-                produal.write(speed < 1000 ? speed+=5 : 1000);
+                speed+=5;
+                produal.write(speed < 1000 ? speed : 1000);
             }
             if(more) {
-                if(sharedResources->getCo2() > sharedResources->getCo2SP() ){
-                    produal.write(speed < 1000 ? speed+=5 : 1000);
+                if(sharedResources->getCo2() > sharedResources->getCo2SP() && sharedResources->getCo2() < 2000){
+                    speed+=5;
+                    produal.write(speed < 1000 ? speed : 1000);
                 }
-                else{
+                else if(sharedResources->getCo2() < sharedResources->getCo2SP()){
                     more = false;
                     speed = 0;
                     produal.write(speed);
@@ -242,7 +247,7 @@ void NetworkTask(void *param) {
     //network.dataSendTimer = xTimerCreate("DataSendTimer", pdMS_TO_TICKS(1000), pdTRUE, (void *)&network, network.dataSendTimerCallback);
     while (true) {
         if (sharedResources->credentialsEntered) {
-            //network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
+            network.setCredentials(sharedResources->getSSID(), sharedResources->getPassword());
             network.setCredentials("Nadim", "nadimahmed");
             printf("I am here");
             sharedResources->credentialsEntered = false;
@@ -250,21 +255,26 @@ void NetworkTask(void *param) {
         }
         if (network_status) {
             network.connect();
-            vTaskDelay(10000);
             transmit = true;
             network.transmit = true;
             network_status = false;
         }
         if (transmit) {
-            network.recieve();
+          /*  network.recieve();
             if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint >= 200 &&
                 network.Co2_SetPoint <= 2000) {
                 sharedResources->setCo2SP(network.Co2_SetPoint);
             }
             printf("CO2 Set Point in main=%d\n", sharedResources->getCo2SP());
             printf("Co2 Set Point in network=%d\n", network.Co2_SetPoint);
-            network.send(sharedResources->getCo2(), sharedResources->getTem(), sharedResources->getRH(),
-                         sharedResources->getFanSpeed(), sharedResources->getPressure());
+            network.send(sharedResources->getCo2(), sharedResources->getTem()/10, sharedResources->getRH()/10,
+                         sharedResources->getFanSpeed()/10, sharedResources->getCo2SP());*/
+          network.sendAndreceive(sharedResources->getCo2(), sharedResources->getTem()/10, sharedResources->getRH()/10,
+                             sharedResources->getFanSpeed()/10, sharedResources->getCo2SP());
+            if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint >= 200 &&
+                network.Co2_SetPoint <= 2000) {
+                sharedResources->setCo2SP(network.Co2_SetPoint);
+            }
 
             vTaskDelay(10);
         }
@@ -288,8 +298,8 @@ void eeprom_task(void *param){
     int newCO2SP = 0;
     while(true){
         if(sharedResources->credentialsEntered){
-            eeprom.writeToMemory(0, (uint8_t*)sharedResources->getSSID(), 64);
-            eeprom.writeToMemory(64, (uint8_t*)sharedResources->getPassword(), 64);
+            eeprom.writeToMemory(0, (uint8_t*)sharedResources->getSSID(), 62);
+            eeprom.writeToMemory(64, (uint8_t*)sharedResources->getPassword(), 62);
             sharedResources->credentialsEntered = false;
         }
        // read from the eeprom

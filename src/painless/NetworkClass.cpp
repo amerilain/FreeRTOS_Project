@@ -43,11 +43,11 @@ void NetworkClass::recieve() {
    printf("Co2_SetPoint: %d\n",Co2_SetPoint);
 }
 
-void NetworkClass::send( int co2, int temp, int hum, int fan, int AP) {
+void NetworkClass::send( int co2, int hum, int tem, int fan, int co2sp) {
     char resp[256];
     sprintf(resp, "POST /update?api_key=90GTB0DYRPZN9G6Y&field1=%d&field2=%d&field3=%d&field4=%d&field5=%d HTTP/1.1\r\n"
                  "Host: api.thingspeak.com\r\n"
-                 "\r\n", co2, temp, hum, fan, AP);
+                 "\r\n", co2,hum, tem, fan, co2sp);
     run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, resp, TLS_CLIENT_TIMEOUT_SECS);
 }
 
@@ -74,6 +74,17 @@ void NetworkClass::dataReceiveTimerCallback(TimerHandle_t xTimer) {
         printf("Data received\n");
     }
 
+}
+void NetworkClass::sendAndreceive(int co2, int tem, int rh, int fanSpeed, int Co2_SP) {
+    char resp[256];
+    sprintf(resp, "POST https://api.thingspeak.com/update.json?field1=%d&field2=%d&field3=%d&field4=%d&field5=%d&api_key=90GTB0DYRPZN9G6Y&talkback_key=ZZ4SW85BXQ6W18HV HTTP/1.1\r\n"
+                 "Host: api.thingspeak.com\r\n"
+                 "Connection: close\r\n"
+                 "\r\n", co2, tem, rh, fanSpeed, Co2_SP);
+
+    run_tls_client_test(NULL, 0, TLS_CLIENT_SERVER, resp, TLS_CLIENT_TIMEOUT_SECS);
+    Co2_SetPoint = get_co2_setpoint();
+    printf("Co2_SetPoint: %d\n",Co2_SetPoint);
 }
 
 
