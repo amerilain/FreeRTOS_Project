@@ -62,12 +62,12 @@ void Menu::Co2Setmenu() {
     display->Cc2Setpoint(co2);
     if(resources->isRotaryClockwise){
         resources->isRotaryClockwise = false;
-        co2 < 1500 ? co2+=100 : 1500;
+        co2 < 1500 ? co2+=10 : 1500;
         printf("Co2 increase: %d\n", co2);
     }
     if(resources->isRotaryCounterClockwise){
         resources->isRotaryCounterClockwise = false;
-        co2 > 200 ? co2-=100 : 200;
+        co2 > 200 ? co2-=10 : 200;
         printf("Co2 decrese: %d\n", co2);
     }
     if(resources->isRotaryPressed){

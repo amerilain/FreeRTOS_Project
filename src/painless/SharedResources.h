@@ -44,7 +44,7 @@ public:
     char* getPassword();
     void setPassword(char* password);
 
-
+    SemaphoreHandle_t mutex;
     QueueHandle_t xbuttonQueue;
 
 

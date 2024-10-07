@@ -8,10 +8,11 @@
 #define EEPROM_SIZE 32768  // 32 KB total size
 #define I2C_WAIT_TIME 5
 
-extern SemaphoreHandle_t i2c_mutex;
 
 EEPROM::EEPROM(std::shared_ptr<PicoI2C> i2c, uint16_t device_address)
-        : i2c(i2c), device_address(device_address) {}
+        : i2c(i2c), device_address(device_address) {
+    i2c_mutex = xSemaphoreCreateMutex();
+}
 
 EEPROM::~EEPROM() {}
 
