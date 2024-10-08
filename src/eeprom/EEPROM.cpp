@@ -92,3 +92,15 @@ void EEPROM::readFromMemory(uint16_t memory_address, uint8_t* data, size_t lengt
         printf("Failed to take mutex for EEPROM read operation.\n");
     }
 }
+
+void EEPROM::clearEEPROM() {
+    uint8_t buffer[64] = {0};  // Buffer to write zero bytes (adjust size to match EEPROM block size)
+
+    // Clear the EEPROM by writing zero to every block in 64-byte chunks
+    for (uint16_t address = 0; address < EEPROM_SIZE; address += sizeof(buffer)) {
+        // Write zero data to the EEPROM block
+        writeToMemory(address, buffer, sizeof(buffer) - 2);  // Subtract 2 for CRC
+    }
+    printf("EEPROM cleared.\n");
+}
+

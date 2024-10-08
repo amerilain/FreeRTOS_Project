@@ -74,6 +74,12 @@ void Eeprom_Task(void *param) {
     eeprom.readFromMemory(0x80, (uint8_t*)read_buffer, string_length);
     printf("Read '%s' from EEPROM at location 128.\n", read_buffer);
 
+    // Clear the EEPROM
+    eeprom.clearEEPROM();
+    eeprom.readFromMemory(0x80, (uint8_t*)read_buffer, string_length);
+    printf("Read '%s' from EEPROM at location 128.\n", read_buffer);
+
+
     while (true) {
         gpio_put(led_pin, 1);
         vTaskDelay(delay);

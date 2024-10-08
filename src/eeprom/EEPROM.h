@@ -14,6 +14,7 @@ public:
     // Updated methods to write and read with block size, metadata, and CRC
     void writeToMemory(uint16_t memory_address, const uint8_t* data, size_t length);
     void readFromMemory(uint16_t memory_address, uint8_t* data, size_t length);
+    void clearEEPROM();
 private:
     std::shared_ptr<PicoI2C> i2c;
     uint16_t device_address;
