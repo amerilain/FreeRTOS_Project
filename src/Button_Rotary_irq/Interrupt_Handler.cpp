@@ -23,7 +23,7 @@ void Interrupt_Handler::setupPin(uint8_t pin) {
 void Interrupt_Handler::callback(uint gpio, uint32_t events) {
     Interrupt_Handler* handler = handlers[gpio];
     if (gpio == 10) {
-        if (time_us_32() - timestamp > 5000) {
+        if (time_us_32() - timestamp > 1000) {
             timestamp = time_us_32();
             if (gpio_get(11)) {
                 handler->count = -1;

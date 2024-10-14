@@ -67,7 +67,7 @@ void TFTDisplay::mainMenu() {
     text("Co2 SetPoint", 0, 20);
     text("Status", 0, 30);
     text( "WiFi Connection", 0, 42);
-    text("Status", 0, 54);
+    text("-----------", 0, 54);
     show();
 }
 

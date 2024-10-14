@@ -18,11 +18,11 @@ void Menu::mainmenu() {
         position--;
         resources->isRotaryCounterClockwise = false;
     }
-    if(position > 3) {
+    if(position > 2) {
         position = 0;
     }
     if(position < 0) {
-        position = 3;
+        position = 2;
     }
     display->selectmenu(position);
     if (resources->isRotaryPressed) {
@@ -39,9 +39,6 @@ void Menu::mainmenu() {
             case 2:
                 MenuEventType = wifiMenu;
                 display->wifiMMenu();
-                break;
-            case 3:
-                MenuEventType = credentialsMenu;
                 break;
         }
     }

@@ -133,7 +133,7 @@ void modbus_task(void *param) {
            // printf("CO2=%d\n", sharedResources->getCo2());
             xSemaphoreGive(sharedResources->mutex);
         }
-        vTaskDelay(10);
+        vTaskDelay(100);
     }
 }
 
@@ -194,12 +194,12 @@ void fanSpeedWrite( void *param){
         if(xSemaphoreTake(sharedResources->mutex, portMAX_DELAY) == pdTRUE){
             if (sharedResources->getCo2() > 2000){
                 more = true;
-                speed+=5;
+                speed+=1;
                 produal.write(speed < 1000 ? speed : 1000);
             }
             if(more) {
                 if(sharedResources->getCo2() > sharedResources->getCo2SP() && sharedResources->getCo2() < 2000){
-                    speed+=5;
+                    speed+=1;
                     produal.write(speed < 1000 ? speed : 1000);
                 }
                 else if(sharedResources->getCo2() < sharedResources->getCo2SP()){
@@ -208,6 +208,9 @@ void fanSpeedWrite( void *param){
                     produal.write(speed);
                     printf("Fan Speed=%d, Fan off\n", speed);
                 }
+            }
+            if (speed >= 1000){
+                speed = 1000;
             }
             sharedResources->setFanSpeed(speed);
             xSemaphoreGive(sharedResources->mutex);
@@ -233,7 +236,7 @@ void UI_task(void *param){
       //printf("MENU sHOW\n");
 
 
-        vTaskDelay(10);
+        vTaskDelay(100);
     }
 }
 
@@ -273,7 +276,7 @@ void NetworkTask(void *param) {
           network.sendAndreceive(sharedResources->getCo2(), sharedResources->getTem()/10, sharedResources->getRH()/10,
                              sharedResources->getFanSpeed()/10, sharedResources->getCo2SP());
             if (network.Co2_SetPoint != sharedResources->getCo2SP() && network.Co2_SetPoint >= 200 &&
-                network.Co2_SetPoint <= 2000) {
+                network.Co2_SetPoint <= 1500) {
                 sharedResources->setCo2SP(network.Co2_SetPoint);
             }
 
@@ -315,7 +318,6 @@ void eeprom_task(void *param){
                 sharedResources->setPassword(passbuffer);
                 sharedResources->credentialsEntered = true;
             }
-            vTaskDelay(1000);
             eeprom.readFromMemory(128, (uint8_t*)readbuffer, 62);
             //printf("SSID=%s\n", ssidbuffer);
             printf("PASS=%s\n", passbuffer);
