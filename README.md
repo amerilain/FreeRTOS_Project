@@ -128,7 +128,7 @@ The miniature test setup replicates the same functionality as the full-scale set
 
 The following class diagram illustrates the structure of the CO2 Greenhouse Controller system, highlighting the key components, tasks, and shared resources used throughout the system.
 
-![Class Diagram of the CO2 Greenhouse Controller System](images/class_diagram.drawio23.png)
+![Class Diagram of the CO2 Greenhouse Controller System](../Project/Documentation/images/class_diagram.drawio23.png)
 
 ## Appendix
 
