@@ -32,6 +32,21 @@ static int Co2_SetPoint = 0;
 int  get_co2_setpoint() {
     return Co2_SetPoint;
 }
+static int extract_co2_setpoint(const char *buf, size_t buf_len) {
+    const char *command_key = "\"command_string\":\"";
+    size_t command_key_len = strlen(command_key);
+    char *cmd_start = strstr(buf, command_key);
+    if (cmd_start) {
+        cmd_start += command_key_len;
+        char *cmd_end = memchr(cmd_start, '"', buf_len - (cmd_start - buf));
+        if (cmd_end) {
+            *cmd_end = '\0';
+
+            return atoi(cmd_start);
+        }
+    }
+    return -1;
+}
 
 static err_t tls_client_close(void *arg) {
     TLS_CLIENT_T *state = (TLS_CLIENT_T*)arg;
@@ -103,21 +118,12 @@ static err_t tls_client_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, e
         pbuf_copy_partial(p, buf, p->tot_len, 0);
         buf[p->tot_len] = 0;
 
-       // printf("***\nnew data received from server:\n***\n\n%s\n", buf);
 
-        char *cmd_start = strstr(buf, "\"command_string\":\"");
-        if (cmd_start) {
-            cmd_start += strlen("\"command_string\":\"");  // Move pointer to the start of the command value
-            char *cmd_end = strchr(cmd_start, '"');        // Find the closing quote
-            if (cmd_end) {
-                *cmd_end = '\0';  // Null-terminate the command string
-                //printf("Extracted command: %s\n", cmd_start);
-
-                // Convert the command string to an integer if needed
-                int command_value = atoi(cmd_start);
-                Co2_SetPoint = command_value;
-                printf("New CO2 setpoint: %d\n", command_value);
-            }
+        // Call the new function to extract the CO2 setpoint
+        int command_value = extract_co2_setpoint(buf, p->tot_len);
+        if (command_value >= 0) {
+            Co2_SetPoint = command_value;
+            printf("New CO2 setpoint: %d\n", command_value);
         }
 
         free(buf);

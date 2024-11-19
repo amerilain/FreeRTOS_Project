@@ -35,43 +35,26 @@ add_executable(${ProjectName}
         display/ssd1306os.h
         display/ssd1306os.cpp
         #       Our headers:
-        Button_Rotary_irq/interrupt_Handler.h
-        Button_Rotary_irq/interrupt_Handler.cpp
-        painless/tftdisplay.cpp
-        painless/tftdisplay.h
-        painless/ModbusController.h
-        painless/ModbusController.cpp
-        painless/PressureSensor.h
-        painless/PressureSensor.cpp
-        painless/co2valve.cpp
-        painless/co2valve.h
-        painless/NetworkClass.cpp
-        painless/NetworkClass.h
-        painless/SharedResources.h
-        painless/SharedResources.cpp
-        painless/Menu/Menu.h
-        painless/Menu/Menu.cpp
-        painless/Menu/MainMenu.h
-        painless/Menu/MainMenu.cpp
-        painless/Menu/Co2SetMenu.h
-        painless/Menu/Co2SetMenu.h
-        painless/Menu/WifiMenu.h
-        painless/Menu/WifiMenu.h
-        painless/Menu/WifiMenu.cpp
-        painless/Menu/StatusMenu.h
-        painless/Menu/MenuHandler.h
-        painless/Menu/MenuHandler.cpp
-        painless/Menu/CredentialMenu.h
-        painless/Menu/CredentialMenu.cpp
-        painless/Menu/StatusMenu.cpp
-        painless/Menu/irqs.h
-        painless/Menu/irqs.h
-        painless/Menu/irqs.cpp
+        Sources/tftdisplay.cpp
+        Sources/tftdisplay.h
+        Sources/PressureSensor.h
+        Sources/PressureSensor.cpp
+        Sources/co2valve.cpp
+        Sources/co2valve.h
+        Sources/NetworkClass.cpp
+        Sources/NetworkClass.h
+        Sources/SharedResources.h
+        Sources/SharedResources.cpp
+        Menu/Menu.h
+        Menu/Menu.cpp
+        Sources/irqs.h
+        Sources/irqs.h
+        Sources/irqs.cpp
         eeprom/EEPROM.cpp
-        #painless/MenuHandler.cpp
-        #painless/MenuHandler.h
-        #painless/main2.cpp
-        # painless/nadim_main.cpp
+        #Sources/MenuHandler.cpp
+        #Sources/MenuHandler.h
+        #Sources/main2.cpp
+        # Sources/nadim_main.cpp
         #abhinav/abhinav.cpp
 )
 
